@@ -8,50 +8,41 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-const CHAT_NAME = "234";
-let activeUsers = new Map();
+// Guardar usuarios conectados: { socketId: nickname }
+const users = {};
 
 io.on('connection', (socket) => {
-  console.log('Un usuario se ha conectado:', socket.id);
+    socket.on('join', (nickname) => {
+        socket.nickname = nickname || 'Anónimo';
+        users[socket.id] = socket.nickname;
 
-  socket.on('join_chat', (nickname) => {
-    const cleanNickname = nickname && nickname.trim() !== '' ? nickname.trim() : 'UsuarioAnonimo';
-    activeUsers.set(socket.id, cleanNickname);
-
-    socket.emit('chat_joined', {
-      chatName: CHAT_NAME,
-      nickname: cleanNickname
+        // Notificar que alguien se unió
+        io.emit('system-message', `${socket.nickname} ha entrado al chat.`);
+        
+        // Enviar la lista actualizada de usuarios a todos
+        io.emit('update-users', Object.values(users));
     });
 
-    socket.broadcast.emit('user_event', {
-      systemMessage: `${cleanNickname} ha entrado al chat.`
+    socket.on('chat message', (msg) => {
+        if (socket.nickname) {
+            io.emit('chat message', {
+                user: socket.nickname,
+                text: msg
+            });
+        }
     });
-  });
 
-  socket.on('send_message', (message) => {
-    const userNickname = activeUsers.get(socket.id);
-    if (userNickname) {
-      io.emit('new_message', {
-        chatName: CHAT_NAME,
-        nickname: userNickname,
-        text: message
-      });
-    }
-  });
-
-  socket.on('disconnect', () => {
-    const userNickname = activeUsers.get(socket.id);
-    if (userNickname) {
-      activeUsers.delete(socket.id);
-      io.emit('user_event', {
-        systemMessage: `${userNickname} ha salido del chat.`
-      });
-    }
-    console.log('Usuario desconectado:', socket.id);
-  });
+    socket.on('disconnect', () => {
+        if (socket.nickname) {
+            delete users[socket.id];
+            io.emit('system-message', `${socket.nickname} ha salido del chat.`);
+            // Actualizar lista al desconectarse
+            io.emit('update-users', Object.values(users));
+        }
+    });
 });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Servidor de chat ejecutándose en http://localhost:${PORT}`);
+    console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
