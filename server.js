@@ -8,27 +8,45 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-// Guardar usuarios conectados: { socketId: nickname }
-const users = {};
+const users = {}; // { socketId: nickname }
 
 io.on('connection', (socket) => {
     socket.on('join', (nickname) => {
         socket.nickname = nickname || 'Anónimo';
         users[socket.id] = socket.nickname;
 
-        // Notificar que alguien se unió
         io.emit('system-message', `${socket.nickname} ha entrado al chat.`);
-        
-        // Enviar la lista actualizada de usuarios a todos
-        io.emit('update-users', Object.values(users));
+        io.emit('update-users', users);
     });
 
-    socket.on('chat message', (msg) => {
+    socket.on('chat message', (data) => {
         if (socket.nickname) {
             io.emit('chat message', {
                 user: socket.nickname,
-                text: msg
+                text: data.text,
+                time: data.time
             });
+        }
+    });
+
+    // Evento de baneo/kick de administrador
+    fnKickUser = (targetId, adminName) => {
+        if (users[targetId]) {
+            const targetSocket = io.sockets.sockets.get(targetId);
+            if (targetSocket) {
+                targetSocket.emit('kicked', adminName);
+                targetSocket.disconnect(true);
+            }
+        }
+    };
+
+    socket.on('kick user', ({ targetId, adminName }) => {
+        if (users[targetId]) {
+            const targetSocket = io.sockets.sockets.get(targetId);
+            if (targetSocket) {
+                targetSocket.emit('kicked', adminName);
+                targetSocket.disconnect(true);
+            }
         }
     });
 
@@ -36,8 +54,7 @@ io.on('connection', (socket) => {
         if (socket.nickname) {
             delete users[socket.id];
             io.emit('system-message', `${socket.nickname} ha salido del chat.`);
-            // Actualizar lista al desconectarse
-            io.emit('update-users', Object.values(users));
+            io.emit('update-users', users);
         }
     });
 });
