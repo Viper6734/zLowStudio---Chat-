@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Node Chat Server</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+    #chat-container { display: none; max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    #login-container { max-width: 400px; margin: 50px auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; }
+    #messages { list-style-type: none; padding: 10px; max-height: 350px; overflow-y: auto; border: 1px solid #ddd; height: 300px; border-radius: 4px; background: #fafafa; }
+    #messages li { padding: 8px 12px; margin-bottom: 6px; border-radius: 4px; background: #e9ecef; }
+    .system-msg { color: #6c757d; font-style: italic; background: transparent !important; text-align: center; }
+    input[type="text"] { width: 70%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    button { padding: 10px 15px; border: none; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer; }
+    button:hover { background-color: #0056b3; }
+  </style>
+</head>
+<body>
+
+  <div id="login-container">
+    <h2>Ingresa al Chat</h2>
+    <input type="text" id="nickname-input" placeholder="Ingresa tu apodo..." />
+    <button id="join-btn">Entrar</button>
+  </div>
+
+  <div id="chat-container">
+    <h2 id="chat-header"></h2>
+    <ul id="messages"></ul>
+    <div style="display: flex; gap: 10px; margin-top: 10px;">
+      <input type="text" id="message-input" placeholder="Escribe un mensaje..." style="flex: 1;" />
+      <button id="send-btn">Enviar</button>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const loginContainer = document.getElementById('login-container');
+    const chatContainer = document.getElementById('chat-container');
+    const nicknameInput = document.getElementById('nickname-input');
+    const joinBtn = document.getElementById('join-btn');
+    const chatHeader = document.getElementById('chat-header');
+    const messagesList = document.getElementById('messages');
+    const messageInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+
+    joinBtn.addEventListener('click', () => {
+      const nickname = nicknameInput.value;
+      if (nickname.trim() !== '') {
+        socket.emit('join_chat', nickname);
+      }
+    });
+
+    nicknameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') joinBtn.click();
+    });
+
+    socket.on('chat_joined', (data) => {
+      loginContainer.style.display = 'none';
+      chatContainer.style.display = 'block';
+      chatHeader.innerText = `Chat: ${data.chatName} | Tu apodo: ${data.nickname}`;
+    });
+
+    sendBtn.addEventListener('click', () => {
+      const msg = messageInput.value;
+      if (msg.trim() !== '') {
+        socket.emit('send_message', msg);
+        messageInput.value = '';
+      }
+    });
+
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendBtn.click();
+    });
+
+    socket.on('new_message', (data) => {
+      const li = document.createElement('li');
+      li.textContent = `[${data.chatName}] ${data.nickname}: ${data.text}`;
+      messagesList.appendChild(li);
+      messagesList.scrollTop = messagesList.scrollHeight;
+    });
+
+    socket.on('user_event', (data) => {
+      const li = document.createElement('li');
+      li.className = 'system-msg';
+      li.textContent = data.systemMessage;
+      messagesList.appendChild(li);
+      messagesList.scrollTop = messagesList.scrollHeight;
+    });
+  </script>
+</body>
+</html>
