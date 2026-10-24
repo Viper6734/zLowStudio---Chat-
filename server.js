@@ -17,6 +17,7 @@ const AVAILABLE_COLORS = [
 
 let colorIndex = 0;
 const users = {}; 
+let messageIdCounter = 0;
 
 function getUniqueColor() {
     const color = AVAILABLE_COLORS[colorIndex % AVAILABLE_COLORS.length];
@@ -43,7 +44,10 @@ io.on('connection', (socket) => {
 
     socket.on('chat message', (data) => {
         if (users[socket.id]) {
+            messageIdCounter++;
+            const msgId = 'msg_' + messageIdCounter + '_' + Date.now();
             io.emit('chat message', {
+                id: msgId,
                 senderId: socket.id,
                 user: users[socket.id].nickname,
                 color: users[socket.id].color,
@@ -51,6 +55,16 @@ io.on('connection', (socket) => {
                 time: data.time
             });
         }
+    });
+
+    // Evento para eliminar un mensaje
+    socket.on('delete message', (msgId) => {
+        io.emit('message deleted', msgId);
+    });
+
+    // Evento para editar un mensaje
+    socket.on('edit message', ({ msgId, newText }) => {
+        io.emit('message edited', { msgId, newText });
     });
 
     socket.on('admin update user', ({ targetId, newName, newColor }) => {
