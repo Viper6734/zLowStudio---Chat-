@@ -4,7 +4,10 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+// Aumentamos el límite de tamaño de Socket.io para admitir imágenes medianas/grandes
+const io = new Server(server, {
+    maxHttpBufferSize: 5e6 // 5 MB
+});
 
 app.use(express.static('public'));
 
@@ -64,7 +67,8 @@ io.on('connection', (socket) => {
                 senderId: socket.id,
                 user: users[socket.id].nickname,
                 color: users[socket.id].color,
-                text: data.text,
+                text: data.text || '',
+                image: data.image || null,
                 time: data.time,
                 replyTo: data.replyTo || null
             });
