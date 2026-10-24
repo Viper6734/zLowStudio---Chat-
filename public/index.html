@@ -206,7 +206,6 @@
             cursor: pointer;
         }
 
-        /* Palpitación de bordes continua */
         @keyframes borderPulseGlow {
             0% {
                 box-shadow: 0 0 10px var(--border-color), inset 0 0 5px var(--border-color), 0 0 20px var(--glow-color);
@@ -230,7 +229,7 @@
             background: var(--bg-container);
             border-radius: 16px;
             border: 2px solid var(--border-color);
-            overflow: visible;
+            overflow: hidden;
             position: relative;
             animation: borderPulseGlow 4s infinite ease-in-out;
         }
@@ -241,6 +240,7 @@
             flex-direction: column;
             padding: 20px;
             min-width: 0;
+            position: relative;
         }
 
         .chat-header {
@@ -360,18 +360,21 @@
             gap: 8px;
         }
 
-        .settings-btn {
-            background: transparent;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            color: var(--text-sub);
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-        .settings-btn:hover {
-            color: var(--text-main);
+        .action-icon-btn {
             background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: var(--text-main);
+            padding: 6px 10px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .action-icon-btn:hover {
+            border-color: var(--accent-blue);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         @keyframes sentBubble {
@@ -577,6 +580,15 @@
 
         .msg-text { font-size: 0.95rem; line-height: 1.4; }
 
+        /* Estilo para las menciones resaltadas */
+        .mention-tag {
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            display: inline-block;
+        }
+
         .edited-tag {
             font-size: 0.7rem;
             color: rgba(255, 255, 255, 0.6);
@@ -622,6 +634,7 @@
             display: flex;
             gap: 10px;
             margin-top: 5px;
+            position: relative;
         }
 
         .chat-form input {
@@ -644,6 +657,34 @@
             cursor: pointer;
         }
 
+        /* Lista de Autocompletado de Menciones @ */
+        .mentions-autocomplete {
+            display: none;
+            position: absolute;
+            bottom: 110%;
+            left: 0;
+            width: 250px;
+            background: #1a1a24;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+            z-index: 400;
+            overflow: hidden;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .mentions-autocomplete.show { display: block; animation: modalFadeIn 0.15s ease-out; }
+
+        .mention-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .mention-item:hover { background: rgba(255, 255, 255, 0.08); }
+
         .user-avatar {
             width: 32px;
             height: 32px;
@@ -658,7 +699,6 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.4);
         }
 
-        /* Panel lateral */
         .users-sidebar {
             width: 280px;
             background: var(--bg-sidebar);
@@ -667,9 +707,6 @@
             display: flex;
             flex-direction: column;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            border-top-right-radius: 14px;
-            border-bottom-right-radius: 14px;
         }
 
         .users-sidebar.collapsed {
@@ -695,34 +732,6 @@
             letter-spacing: 1px;
             white-space: nowrap;
             margin: 0;
-        }
-
-        /* Botón flotante ubicado sobre la línea divisoria vertical */
-        .toggle-sidebar-btn {
-            position: absolute;
-            left: -14px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 28px;
-            height: 28px;
-            background: var(--bg-sidebar);
-            border: 1px solid var(--border-color);
-            color: var(--text-sub);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 0.75rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
-            z-index: 50;
-            transition: all 0.2s ease;
-        }
-        .toggle-sidebar-btn:hover {
-            background: var(--bg-input);
-            color: var(--text-main);
-            border-color: var(--accent-blue);
-            scale: 1.1;
         }
 
         #users-list {
@@ -914,7 +923,9 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <button class="settings-btn" id="open-settings-btn" title="Settings">⚙️</button>
+                    <!-- Botón para Abrir/Cerrar la Lista siempre visible junto a Settings -->
+                    <button class="action-icon-btn" id="toggle-sidebar-btn" title="Mostrar/Ocultar Conectados">👥</button>
+                    <button class="action-icon-btn" id="open-settings-btn" title="Settings">⚙️</button>
                 </div>
             </div>
             
@@ -934,14 +945,15 @@
             </div>
 
             <form id="form" class="chat-form">
-                <input id="input" autocomplete="off" placeholder="Escribe un mensaje..." />
+                <!-- Autocompletado flotante de menciones -->
+                <div class="mentions-autocomplete" id="mentions-popup"></div>
+                
+                <input id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ para mencionar)" />
                 <button class="main-btn" id="btn-send" style="width: auto;">Enviar</button>
             </form>
         </div>
 
-        <!-- Panel Lateral con Botón Central Siempre Visible -->
         <div class="users-sidebar" id="sidebar">
-            <button class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Ocultar/Mostrar Lista">◀</button>
             <div class="sidebar-header-row">
                 <h3 id="txt-sidebar-title">Conectados (<span id="user-count">0</span>)</h3>
             </div>
@@ -1002,6 +1014,7 @@
         const messages = document.getElementById('messages');
         const usersList = document.getElementById('users-list');
         const userCount = document.getElementById('user-count');
+        const mentionsPopup = document.getElementById('mentions-popup');
 
         let myNickname = '';
         let isAdmin = false;
@@ -1089,7 +1102,6 @@
             const isCollapsed = localStorage.getItem('chat_sidebar_collapsed') === 'true';
             if (isCollapsed) {
                 sidebar.classList.add('collapsed');
-                toggleSidebarBtn.textContent = '▶';
             }
         }
 
@@ -1141,10 +1153,10 @@
         openSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
         closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'none');
 
+        // Botón superior para alternar lista
         toggleSidebarBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
             const isCollapsed = sidebar.classList.contains('collapsed');
-            toggleSidebarBtn.textContent = isCollapsed ? '▶' : '◀';
             saveSettings('sidebar_collapsed', isCollapsed);
         });
 
@@ -1181,7 +1193,7 @@
                 document.getElementById('st-label-sound').textContent = 'Sonido de Notificación';
                 document.getElementById('close-settings-btn').textContent = 'Guardar y Cerrar';
                 document.getElementById('btn-send').textContent = 'Enviar';
-                input.placeholder = 'Escribe un mensaje...';
+                input.placeholder = 'Escribe un mensaje... (Usa @ para mencionar)';
                 document.getElementById('join-title').textContent = 'Ingresa al Chat';
                 joinBtn.textContent = 'Entrar';
             }
@@ -1202,13 +1214,67 @@
             playMessageSound();
         }));
 
+        // Lógica de detección de menciones @ en el Input
         input.addEventListener('input', () => {
             socket.emit('typing', true);
             clearTimeout(typingTimeout);
             typingTimeout = setTimeout(() => {
                 socket.emit('typing', false);
             }, 1000);
+
+            const text = input.value;
+            const cursorPosition = input.selectionStart;
+            const textUpToCursor = text.substring(0, cursorPosition);
+            const mentionMatch = textUpToCursor.match(/@([a-zA-Z0-9_]*)$/);
+
+            if (mentionMatch) {
+                const query = mentionMatch[1].toLowerCase();
+                showMentionsPopup(query);
+            } else {
+                mentionsPopup.classList.remove('show');
+            }
         });
+
+        function showMentionsPopup(query) {
+            mentionsPopup.innerHTML = '';
+            const matchingUsers = Object.values(currentUsersData).filter(u => 
+                u.status !== 'offline' && u.nickname.toLowerCase().includes(query)
+            );
+
+            if (matchingUsers.length === 0) {
+                mentionsPopup.classList.remove('show');
+                return;
+            }
+
+            matchingUsers.forEach(u => {
+                const div = document.createElement('div');
+                div.className = 'mention-item';
+                const initial = u.nickname.charAt(0).toUpperCase();
+                const status = u.status || 'online';
+
+                div.innerHTML = `
+                    <div class="user-avatar" style="background-color: ${u.color}">${initial}</div>
+                    <span class="status-icon ${status}"></span>
+                    <span style="color: ${u.color}; font-weight: bold; font-size: 0.9rem;">${u.nickname}</span>
+                `;
+
+                div.addEventListener('click', () => {
+                    const text = input.value;
+                    const cursorPosition = input.selectionStart;
+                    const textUpToCursor = text.substring(0, cursorPosition);
+                    const lastAtIndex = textUpToCursor.lastIndexOf('@');
+                    
+                    const newText = text.substring(0, lastAtIndex) + `@${u.nickname} ` + text.substring(cursorPosition);
+                    input.value = newText;
+                    mentionsPopup.classList.remove('show');
+                    input.focus();
+                });
+
+                mentionsPopup.appendChild(div);
+            });
+
+            mentionsPopup.classList.add('show');
+        }
 
         socket.on('typing update', (typingNames) => {
             const otherTyping = typingNames.filter(name => name !== myNickname);
@@ -1287,6 +1353,7 @@
                 input.value = '';
                 replyingTo = null;
                 replyPreviewContainer.style.display = 'none';
+                mentionsPopup.classList.remove('show');
                 socket.emit('typing', false);
             }
         });
@@ -1298,7 +1365,22 @@
             if (!e.target.closest('.status-dropdown-container')) {
                 statusMenu.classList.remove('show');
             }
+            if (!e.target.closest('.chat-form')) {
+                mentionsPopup.classList.remove('show');
+            }
         });
+
+        // Formatea el texto reemplazando menciones @Usuario por etiquetas de color
+        function formatMentions(text) {
+            let formattedText = text;
+            Object.values(currentUsersData).forEach(u => {
+                const mentionRegex = new RegExp(`@${u.nickname}\\b`, 'gi');
+                if (mentionRegex.test(formattedText)) {
+                    formattedText = formattedText.replace(mentionRegex, `<span class="mention-tag" style="color: ${u.color};">@${u.nickname}</span>`);
+                }
+            });
+            return formattedText;
+        }
 
         socket.on('chat message', (data) => {
             playMessageSound();
@@ -1318,10 +1400,12 @@
                 replyHtml = `
                     <div class="replied-quote" style="border-left-color: ${data.replyTo.color}">
                         <span class="q-user" style="color: ${data.replyTo.color}">${data.replyTo.user}</span>
-                        <span>${data.replyTo.text}</span>
+                        <span>${formatMentions(data.replyTo.text)}</span>
                     </div>
                 `;
             }
+
+            const formattedMessageText = formatMentions(data.text);
 
             item.innerHTML = `
                 <div class="user-avatar" style="background-color: ${data.color}">${initial}</div>
@@ -1344,7 +1428,7 @@
                     </div>
                     ${replyHtml}
                     <div class="msg-text-container">
-                        <span class="msg-text-content">${data.text}</span>
+                        <span class="msg-text-content">${formattedMessageText}</span>
                     </div>
                 </div>
             `;
@@ -1377,7 +1461,7 @@
                 editBtn.addEventListener('click', () => {
                     menuDropdown.classList.remove('show');
                     selectedMsgId = data.id;
-                    const currentText = item.querySelector('.msg-text-content').textContent;
+                    const currentText = item.querySelector('.msg-text-content').innerText;
                     editMsgInput.value = currentText;
                     editMsgModal.style.display = 'flex';
                 });
@@ -1411,7 +1495,8 @@
             const targetItem = document.getElementById(msgId);
             if (targetItem) {
                 const textContainer = targetItem.querySelector('.msg-text-container');
-                textContainer.innerHTML = `<span class="msg-text-content">${newText}</span><span class="edited-tag">(editado)</span>`;
+                const formattedNewText = formatMentions(newText);
+                textContainer.innerHTML = `<span class="msg-text-content">${formattedNewText}</span><span class="edited-tag">(editado)</span>`;
                 
                 targetItem.classList.remove('edited-anim');
                 void targetItem.offsetWidth;
