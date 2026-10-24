@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    maxHttpBufferSize: 20e6 // 20 MB para soportar audios pesados, imágenes y avatares
+    maxHttpBufferSize: 10e6 // 10 MB para soportar imágenes y avatares
 });
 
 app.use(express.static('public'));
@@ -74,7 +74,6 @@ io.on('connection', (socket) => {
                 color: users[socket.id].color,
                 text: data.text || '',
                 image: data.image || null,
-                audio: data.audio || null, // Soporte de Nota de Voz
                 time: data.time,
                 replyTo: data.replyTo || null,
                 reactions: {}
@@ -98,10 +97,14 @@ io.on('connection', (socket) => {
                         alreadyReacted = true;
                         return false;
                     }
-                    if (item.id === socket.id) return false;
+                    if (item.id === socket.id) {
+                        return false;
+                    }
                     return true;
                 });
-                if (msg.reactions[e].length === 0) delete msg.reactions[e];
+                if (msg.reactions[e].length === 0) {
+                    delete msg.reactions[e];
+                }
             });
 
             if (!alreadyReacted) {
