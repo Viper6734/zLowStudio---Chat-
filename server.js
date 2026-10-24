@@ -74,6 +74,7 @@ io.on('connection', (socket) => {
                 color: users[socket.id].color,
                 text: data.text || '',
                 image: data.image || null,
+                audio: data.audio || null, // <--- SE AGREGÓ EL AUDIO
                 time: data.time,
                 replyTo: data.replyTo || null,
                 reactions: {}
