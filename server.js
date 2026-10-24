@@ -4,9 +4,8 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-// Aumentamos el límite de tamaño de Socket.io para admitir imágenes medianas/grandes
 const io = new Server(server, {
-    maxHttpBufferSize: 5e6 // 5 MB
+    maxHttpBufferSize: 5e6 // 5 MB para imágenes
 });
 
 app.use(express.static('public'));
@@ -22,6 +21,9 @@ let colorIndex = 0;
 const users = {}; 
 const typingUsers = new Set();
 let messageIdCounter = 0;
+
+// Almacenamiento temporal de mensajes en memoria para las reacciones
+const messagesStore = {};
 
 function getUniqueColor() {
     const color = AVAILABLE_COLORS[colorIndex % AVAILABLE_COLORS.length];
@@ -62,7 +64,7 @@ io.on('connection', (socket) => {
             typingUsers.delete(socket.id);
             broadcastTypingStatus();
 
-            io.emit('chat message', {
+            const msgData = {
                 id: msgId,
                 senderId: socket.id,
                 user: users[socket.id].nickname,
@@ -70,8 +72,51 @@ io.on('connection', (socket) => {
                 text: data.text || '',
                 image: data.image || null,
                 time: data.time,
-                replyTo: data.replyTo || null
+                replyTo: data.replyTo || null,
+                reactions: {} // { '👍': [ {id, nickname, color}, ... ] }
+            };
+
+            messagesStore[msgId] = msgData;
+            io.emit('chat message', msgData);
+        }
+    });
+
+    // Manejo de reacciones
+    socket.on('add reaction', ({ msgId, emoji }) => {
+        const user = users[socket.id];
+        const msg = messagesStore[msgId];
+        if (user && msg) {
+            if (!msg.reactions) msg.reactions = {};
+
+            // Verificar si el usuario ya reaccionó con este emoji para alternarlo (toggle)
+            let alreadyReacted = false;
+            Object.keys(msg.reactions).forEach(e => {
+                msg.reactions[e] = msg.reactions[e].filter(item => {
+                    if (item.id === socket.id && e === emoji) {
+                        alreadyReacted = true;
+                        return false;
+                    }
+                    // Si ya tenía otra reacción del mismo usuario, opcionalmente la quitamos o permitimos múltiples
+                    if (item.id === socket.id) {
+                        return false; // Permitir solo 1 reacción por usuario para limpieza estilo Discord
+                    }
+                    return true;
+                });
+                if (msg.reactions[e].length === 0) {
+                    delete msg.reactions[e];
+                }
             });
+
+            if (!alreadyReacted) {
+                if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
+                msg.reactions[emoji].push({
+                    id: socket.id,
+                    nickname: user.nickname,
+                    color: user.color
+                });
+            }
+
+            io.emit('update reactions', { msgId, reactions: msg.reactions });
         }
     });
 
@@ -95,10 +140,14 @@ io.on('connection', (socket) => {
     }
 
     socket.on('delete message', (msgId) => {
+        delete messagesStore[msgId];
         io.emit('message deleted', msgId);
     });
 
     socket.on('edit message', ({ msgId, newText }) => {
+        if (messagesStore[msgId]) {
+            messagesStore[msgId].text = newText;
+        }
         io.emit('message edited', { msgId, newText });
     });
 
