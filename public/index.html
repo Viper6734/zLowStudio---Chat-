@@ -465,7 +465,6 @@
             max-width: 100%;
         }
 
-        /* Estilo limpio para cuando hay una imagen en la burbuja */
         .msg-bubble.has-image {
             padding: 10px;
         }
@@ -498,7 +497,6 @@
             margin-bottom: 2px;
         }
 
-        /* Imagen en el chat con bordes finos y limpios */
         .msg-image {
             max-width: 280px;
             max-height: 260px;
@@ -682,9 +680,7 @@
             transition: color 0.2s;
             outline: none;
         }
-        .attach-btn:hover {
-            color: var(--text-main);
-        }
+        .attach-btn:hover { color: var(--text-main); }
 
         .chat-form input[type="text"] {
             flex: 1;
@@ -696,6 +692,24 @@
             font-size: 0.95rem;
         }
 
+        /* Botón de Emoji al lado del botón de Enviar */
+        .emoji-toggle-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.75;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .emoji-toggle-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
         .chat-form button.main-btn {
             padding: 10px 20px;
             border: none;
@@ -704,7 +718,74 @@
             color: white;
             font-weight: bold;
             cursor: pointer;
-            margin-left: 6px;
+            margin-left: 2px;
+        }
+
+        /* Pop-up de Selector de Emojis */
+        .emoji-picker-popup {
+            display: none;
+            position: absolute;
+            bottom: 110%;
+            right: 0;
+            width: 310px;
+            height: 250px;
+            background: #1a1a24;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+            z-index: 500;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .emoji-picker-popup.show {
+            display: flex;
+            animation: modalFadeIn 0.15s ease-out;
+        }
+
+        .emoji-picker-header {
+            display: flex;
+            background: rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .emoji-tab-btn {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .emoji-tab-btn.active {
+            color: var(--text-main);
+            border-bottom: 2px solid var(--accent-blue);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .emoji-grid-container {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            align-content: start;
+        }
+
+        .emoji-item {
+            font-size: 1.25rem;
+            cursor: pointer;
+            text-align: center;
+            padding: 4px;
+            border-radius: 6px;
+            user-select: none;
+            transition: background 0.15s;
+        }
+        .emoji-item:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .mentions-autocomplete {
@@ -992,7 +1073,7 @@
                 <button id="cancel-reply-btn" title="Cancelar respuesta">&times;</button>
             </div>
 
-            <!-- Formulario Grande Unificado con Botón '+' a la izquierda -->
+            <!-- Formulario con selector de Emojis al lado izquierdo del botón Send -->
             <form id="form" class="chat-form">
                 <div class="mentions-autocomplete" id="mentions-popup"></div>
                 
@@ -1000,7 +1081,20 @@
                 <button type="button" class="attach-btn" id="attach-btn" title="Cargar o pegar imagen">+</button>
 
                 <input type="text" id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ o pega una imagen)" />
+                
+                <!-- Botón de Emojis -->
+                <button type="button" class="emoji-toggle-btn" id="emoji-toggle-btn" title="Insertar Emoji">😊</button>
+                
                 <button class="main-btn" id="btn-send">Enviar</button>
+
+                <!-- Pop-up de Emojis -->
+                <div class="emoji-picker-popup" id="emoji-picker-popup">
+                    <div class="emoji-picker-header">
+                        <button type="button" class="emoji-tab-btn active" data-tab="faces">😀 Caras</button>
+                        <button type="button" class="emoji-tab-btn" data-tab="people">🧑 Personas</button>
+                    </div>
+                    <div class="emoji-grid-container" id="emoji-grid"></div>
+                </div>
             </form>
         </div>
 
@@ -1070,6 +1164,11 @@
         const attachBtn = document.getElementById('attach-btn');
         const imageFileInput = document.getElementById('image-file-input');
 
+        const emojiToggleBtn = document.getElementById('emoji-toggle-btn');
+        const emojiPickerPopup = document.getElementById('emoji-picker-popup');
+        const emojiGrid = document.getElementById('emoji-grid');
+        const emojiTabBtns = document.querySelectorAll('.emoji-tab-btn');
+
         let myNickname = '';
         let isAdmin = false;
         let currentUsersData = {};
@@ -1079,6 +1178,57 @@
         let typingTimeout = null;
         let soundType = 'synth';
         let currentStatus = 'online';
+
+        // Lista de Emojis Predeterminados
+        const EMOJI_DATABASE = {
+            faces: [
+                '😀','😃','😄','😁','😆','😅','😂','🤣','🥲','☺️','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','📁','😳','🤪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃'
+            ],
+            people: [
+                '👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦵','🦿','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄','👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👨‍⚕️','👩‍⚕️','👨‍🎓','👩‍🎓','👨‍🏫','👩‍🏫','👨‍⚖️','👩‍⚖️','👨‍🌾','👩‍🌾','👨‍🍳','👩‍🍳','👨‍🔧','👩‍🔧','👨‍🏭','👩‍🏭','👨‍💼','👩‍💼','👨‍🔬','👩‍🔬','👨‍💻','👩‍💻','👨‍🎤','👩‍🎤','👨‍🎨','👩‍🎨','👨‍✈️','👩‍✈️','👨‍🚀','👩‍🚀','👨‍🚒','👩‍🚒','👮','🕵️','💂','🥷','👷','🤴','👸','👳','👲','🧕','🤵','👰','🤰','🤱','👼','🎅','🤶','🦸','🦹','🧙','🧚','🧛','🧜','🧝','🧞','🧟','💆','💇','🚶','🏃','💃','🕺','🕴️','👯','🧖','🧗'
+            ]
+        };
+
+        function renderEmojiGrid(category) {
+            emojiGrid.innerHTML = '';
+            const list = EMOJI_DATABASE[category] || EMOJI_DATABASE.faces;
+            list.forEach(emoji => {
+                const span = document.createElement('span');
+                span.className = 'emoji-item';
+                span.textContent = emoji;
+                span.addEventListener('click', () => {
+                    insertEmoji(emoji);
+                });
+                emojiGrid.appendChild(span);
+            });
+        }
+
+        function insertEmoji(emoji) {
+            const startPos = input.selectionStart;
+            const endPos = input.selectionEnd;
+            const currentValue = input.value;
+
+            input.value = currentValue.substring(0, startPos) + emoji + currentValue.substring(endPos);
+            input.selectionStart = input.selectionEnd = startPos + emoji.length;
+            input.focus();
+        }
+
+        emojiToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            emojiPickerPopup.classList.toggle('show');
+            if (emojiPickerPopup.classList.contains('show')) {
+                renderEmojiGrid('faces');
+            }
+        });
+
+        emojiTabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                emojiTabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderEmojiGrid(btn.dataset.tab);
+            });
+        });
 
         function saveSettings(key, val) {
             localStorage.setItem('chat_' + key, val);
@@ -1271,7 +1421,6 @@
             imageFileInput.click();
         });
 
-        // Función para enviar archivos de imagen
         function sendImageFile(file) {
             if (!file || !file.type.startsWith('image/')) return;
 
@@ -1292,6 +1441,7 @@
                 imageFileInput.value = '';
                 replyingTo = null;
                 replyPreviewContainer.style.display = 'none';
+                emojiPickerPopup.classList.remove('show');
                 socket.emit('typing', false);
             };
             reader.readAsDataURL(file);
@@ -1301,7 +1451,6 @@
             sendImageFile(e.target.files[0]);
         });
 
-        // Soporte para pegar imágenes directamente con Ctrl+V
         input.addEventListener('paste', (e) => {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
             for (let item of items) {
@@ -1454,6 +1603,7 @@
                 replyingTo = null;
                 replyPreviewContainer.style.display = 'none';
                 mentionsPopup.classList.remove('show');
+                emojiPickerPopup.classList.remove('show');
                 socket.emit('typing', false);
             }
         });
@@ -1467,6 +1617,7 @@
             }
             if (!e.target.closest('.chat-form')) {
                 mentionsPopup.classList.remove('show');
+                emojiPickerPopup.classList.remove('show');
             }
         });
 
@@ -1672,43 +1823,4 @@
                         editNameModal.style.display = 'flex';
                     });
 
-                    const colorPicker = document.createElement('input');
-                    colorPicker.type = 'color';
-                    colorPicker.className = 'color-picker-input admin-control';
-                    colorPicker.style.display = 'inline-block';
-                    colorPicker.value = uData.color;
-                    colorPicker.addEventListener('change', (e) => {
-                        socket.emit('admin update user', { targetId: id, newName: null, newColor: e.target.value });
-                    });
-
-                    const kickBtn = document.createElement('button');
-                    kickBtn.className = 'kick-btn admin-control';
-                    kickBtn.style.display = 'inline-block';
-                    kickBtn.textContent = 'Kick';
-                    kickBtn.addEventListener('click', () => {
-                        socket.emit('kick user', { targetId: id, adminName: myNickname });
-                    });
-
-                    actionsDiv.appendChild(editBtn);
-                    actionsDiv.appendChild(colorPicker);
-                    actionsDiv.appendChild(kickBtn);
-                }
-
-                li.appendChild(actionsDiv);
-                usersList.appendChild(li);
-            });
-        }
-
-        socket.on('kicked', (adminName) => {
-            kickedReasonText.textContent = `El administrador "${adminName}" te ha expulsado de la sala.`;
-            kickedModal.style.display = 'flex';
-        });
-
-        reconnectBtn.addEventListener('click', () => {
-            window.location.reload();
-        });
-
-        loadSettings();
-    </script>
-</body>
-</html>
+                    const colorPicker =
