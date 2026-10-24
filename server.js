@@ -178,6 +178,16 @@ io.on('connection', (socket) => {
                 image = null;
             }
 
+            let audio = data.audio || null;
+            if (typeof audio !== 'string' || !audio.startsWith('data:audio/')) audio = null;
+
+            let waveform = null;
+            if (Array.isArray(data.waveform) && data.waveform.length > 0 && data.waveform.length <= 100) {
+                waveform = data.waveform.map(n => Math.min(100, Math.max(0, Math.round(Number(n) || 0))));
+            }
+            let duration = Number(data.duration);
+            duration = (isFinite(duration) && duration > 0 && duration < 3600) ? Math.round(duration * 10) / 10 : 0;
+
             const msgData = {
                 id: msgId,
                 senderId: socket.id,
@@ -186,7 +196,9 @@ io.on('connection', (socket) => {
                 color: users[socket.id].color,
                 text: data.text || '',
                 image: image,
-                audio: data.audio || null, // <--- SE AGREGÓ EL AUDIO
+                audio: audio, // <--- SE AGREGÓ EL AUDIO
+                waveform: audio ? waveform : null,
+                duration: audio ? duration : 0,
                 time: data.time,
                 replyTo: data.replyTo || null,
                 reactions: {}
