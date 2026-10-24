@@ -165,6 +165,7 @@
         .setting-options {
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
 
         .opt-btn {
@@ -301,13 +302,11 @@
             100% { transform: scale(1); }
         }
 
-        /* Animación de entrada para el banner de respuesta */
         @keyframes slideDownReply {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Animación de puntos saltando (Escribiendo...) */
         @keyframes bounceDot {
             0%, 80%, 100% { transform: scale(0); }
             40% { transform: scale(1.0); }
@@ -321,17 +320,23 @@
             flex-direction: column;
             gap: 12px;
             padding-right: 5px;
+            padding-bottom: 10px;
         }
 
+        /* Estructura de fila de mensaje con Avatar al lado */
         #messages li {
-            max-width: 80%;
+            max-width: 85%;
             word-wrap: break-word;
             position: relative;
             transition: all 0.3s ease;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
         }
 
         #messages li.sent-msg {
             align-self: flex-end;
+            flex-direction: row-reverse;
             animation: sentBubble 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             transform-origin: bottom right;
         }
@@ -359,6 +364,7 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
+            max-width: 100%;
         }
 
         .sent-msg .msg-bubble { border-bottom-right-radius: 2px; }
@@ -374,23 +380,22 @@
             gap: 15px;
         }
 
-        /* Bloque de mensaje citado dentro de la burbuja */
+        /* Cita de Respuesta con Color Dinámico Original */
         .replied-quote {
-            background: rgba(0, 0, 0, 0.25);
-            border-left: 3px solid rgba(255, 255, 255, 0.6);
-            padding: 4px 8px;
-            margin-bottom: 6px;
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 4px solid #007bff;
+            padding: 6px 10px;
+            margin-bottom: 8px;
             border-radius: 4px;
-            font-size: 0.8rem;
-            opacity: 0.9;
+            font-size: 0.82rem;
         }
         .replied-quote .q-user {
             font-weight: bold;
             display: block;
-            font-size: 0.75rem;
+            font-size: 0.78rem;
+            margin-bottom: 2px;
         }
 
-        /* Banner flotante de respuesta activa sobre el input */
         #reply-preview-container {
             display: none;
             background: var(--bg-input);
@@ -413,7 +418,6 @@
         }
         .reply-preview-content span {
             font-weight: bold;
-            color: var(--text-main);
             display: block;
         }
         #cancel-reply-btn {
@@ -444,17 +448,19 @@
         }
         .menu-dots-btn:hover { opacity: 1; }
 
+        /* Menú desplegable solucionado para que aborde el espacio correcto sin recortarse */
         .dropdown-menu {
             display: none;
             position: absolute;
             right: 0;
-            top: 100%;
+            bottom: 100%;
+            margin-bottom: 5px;
             background: #1a1a24;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            z-index: 50;
-            min-width: 120px;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+            z-index: 200;
+            min-width: 130px;
             overflow: hidden;
         }
 
@@ -498,7 +504,6 @@
             max-width: 100%;
         }
 
-        /* Área de Escribiendo... con puntos animados */
         #typing-indicator {
             font-size: 0.8rem;
             color: var(--text-sub);
@@ -546,19 +551,19 @@
             cursor: pointer;
         }
 
-        /* Avatar circular con la inicial */
+        /* Avatar circular */
         .user-avatar {
-            width: 28px;
-            height: 28px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: #000;
             flex-shrink: 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
         }
 
         .users-sidebar {
@@ -698,6 +703,14 @@
                 </div>
 
                 <div class="setting-card">
+                    <label id="st-label-sound">Sonido de Notificación</label>
+                    <div class="setting-options">
+                        <button class="opt-btn sound-opt active" data-val="synth">Pop Synth</button>
+                        <button class="opt-btn sound-opt" data-val="bubbles">Burbujas Pop</button>
+                    </div>
+                </div>
+
+                <div class="setting-card">
                     <label id="st-label-focus">Modo Enfoque</label>
                     <div class="setting-options">
                         <button class="opt-btn focus-opt" data-val="on">Activado</button>
@@ -767,13 +780,11 @@
             
             <ul id="messages"></ul>
 
-            <!-- Indicador de escritura dinámico -->
             <div id="typing-indicator" style="display: none;">
                 <span id="typing-text">Alguien está escribiendo</span>
                 <div class="typing-dots"><span></span><span></span><span></span></div>
             </div>
 
-            <!-- Banner de respuesta seleccionada -->
             <div id="reply-preview-container">
                 <div class="reply-preview-content">
                     <span id="reply-preview-user"></span>
@@ -847,8 +858,9 @@
         let currentUsersData = {};
         let selectedTargetId = null;
         let selectedMsgId = null;
-        let replyingTo = null; // Guardará el objeto del mensaje al que se responde
+        let replyingTo = null;
         let typingTimeout = null;
+        let soundType = 'synth';
 
         function saveSettings(key, val) {
             localStorage.setItem('chat_' + key, val);
@@ -864,28 +876,48 @@
             const lang = localStorage.getItem('chat_lang') || 'es';
             setLanguage(lang);
 
+            const sound = localStorage.getItem('chat_sound') || 'synth';
+            setSoundType(sound);
+
             const focus = localStorage.getItem('chat_focus') || 'off';
             setFocusMode(focus);
         }
 
+        // Sintetizador de Sonidos Dinámicos
         function playMessageSound() {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
+                if (soundType === 'bubbles') {
+                    // Sonido satisfactorio de Burbujas Pop
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.08);
 
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
 
-                gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.08);
+                } else {
+                    // Sonido Pop Synth
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.1);
 
-                osc.connect(gain);
-                gain.connect(ctx.destination);
+                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
 
-                osc.start();
-                osc.stop(ctx.currentTime + 0.15);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.15);
+                }
             } catch (e) {}
         }
 
@@ -927,6 +959,7 @@
                 document.getElementById('st-title').textContent = '⚙️ Settings';
                 document.getElementById('st-label-theme').textContent = 'Interface Theme';
                 document.getElementById('st-label-lang').textContent = 'Language';
+                document.getElementById('st-label-sound').textContent = 'Notification Sound';
                 document.getElementById('st-label-focus').textContent = 'Focus Mode';
                 document.getElementById('close-settings-btn').textContent = 'Save & Close';
                 document.getElementById('btn-send').textContent = 'Send';
@@ -938,6 +971,7 @@
                 document.getElementById('st-title').textContent = '⚙️ Configuración';
                 document.getElementById('st-label-theme').textContent = 'Tema de Interfaz';
                 document.getElementById('st-label-lang').textContent = 'Idioma';
+                document.getElementById('st-label-sound').textContent = 'Sonido de Notificación';
                 document.getElementById('st-label-focus').textContent = 'Modo Enfoque';
                 document.getElementById('close-settings-btn').textContent = 'Guardar y Cerrar';
                 document.getElementById('btn-send').textContent = 'Enviar';
@@ -945,6 +979,14 @@
                 document.getElementById('join-title').textContent = 'Ingresa al Chat';
                 joinBtn.textContent = 'Entrar';
             }
+        }
+
+        function setSoundType(snd) {
+            soundType = snd;
+            document.querySelectorAll('.sound-opt').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.val === snd);
+            });
+            saveSettings('sound', snd);
         }
 
         function setFocusMode(focus) {
@@ -959,17 +1001,15 @@
             saveSettings('focus', focus);
         }
 
-        document.querySelectorAll('.theme-opt').forEach(btn => {
-            btn.addEventListener('click', () => setTheme(btn.dataset.val));
-        });
-        document.querySelectorAll('.lang-opt').forEach(btn => {
-            btn.addEventListener('click', () => setLanguage(btn.dataset.val));
-        });
-        document.querySelectorAll('.focus-opt').forEach(btn => {
-            btn.addEventListener('click', () => setFocusMode(btn.dataset.val));
-        });
+        document.querySelectorAll('.theme-opt').forEach(btn => btn.addEventListener('click', () => setTheme(btn.dataset.val)));
+        document.querySelectorAll('.lang-opt').forEach(btn => btn.addEventListener('click', () => setLanguage(btn.dataset.val)));
+        document.querySelectorAll('.sound-opt').forEach(btn => btn.addEventListener('click', () => {
+            setSoundType(btn.dataset.val);
+            playMessageSound();
+        }));
+        document.querySelectorAll('.focus-opt').forEach(btn => btn.addEventListener('click', () => setFocusMode(btn.dataset.val)));
 
-        // Evento de escritura (Typing)
+        // Typing event
         input.addEventListener('input', () => {
             socket.emit('typing', true);
             clearTimeout(typingTimeout);
@@ -1034,7 +1074,8 @@
             e.preventDefault();
             if (input.value.trim()) {
                 const now = new Date();
-                const timeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                // Formato de hora limpia sin fecha completa
+                const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 
                 socket.emit('chat message', {
                     text: input.value,
@@ -1064,31 +1105,35 @@
             const isMe = (data.senderId === socket.id);
             item.className = isMe ? 'sent-msg' : 'received-msg';
 
-            const showActions = isMe || isAdmin;
+            const showOwnerAdminOpts = isMe || isAdmin;
+            const initial = data.user ? data.user.charAt(0).toUpperCase() : '?';
 
-            // HTML de respuesta previa si el mensaje está respondiendo a otro
+            // HTML Cita de mensaje respondido con color del emisor original
             let replyHtml = '';
             if (data.replyTo) {
                 replyHtml = `
-                    <div class="replied-quote">
-                        <span class="q-user">${data.replyTo.user}</span>
+                    <div class="replied-quote" style="border-left-color: ${data.replyTo.color}">
+                        <span class="q-user" style="color: ${data.replyTo.color}">${data.replyTo.user}</span>
                         <span>${data.replyTo.text}</span>
                     </div>
                 `;
             }
 
             item.innerHTML = `
+                <div class="user-avatar" style="background-color: ${data.color}">${initial}</div>
                 <div class="msg-bubble" style="background-color: ${data.color}">
                     <div class="msg-info">
                         <span><strong>${data.user}</strong></span>
                         <div style="display: flex; align-items: center; gap: 5px;">
                             <span>${data.time}</span>
-                            <div class="msg-menu-container" style="display: ${showActions ? 'inline-block' : 'none'};">
+                            <div class="msg-menu-container">
                                 <button class="menu-dots-btn" title="Opciones">⋮</button>
                                 <div class="dropdown-menu">
                                     <button class="dropdown-item reply-msg-btn">↩️ Responder</button>
-                                    <button class="dropdown-item edit-msg-btn">✏️ Editar</button>
-                                    <button class="dropdown-item delete-opt del-msg-btn">🗑️ Eliminar</button>
+                                    ${showOwnerAdminOpts ? `
+                                        <button class="dropdown-item edit-msg-btn">✏️ Editar</button>
+                                        <button class="dropdown-item delete-opt del-msg-btn">🗑️ Eliminar</button>
+                                    ` : ''}
                                 </div>
                             </div>
                         </div>
@@ -1114,31 +1159,41 @@
                 menuDropdown.classList.toggle('show');
             });
 
-            // Opción Responder
             replyBtn.addEventListener('click', () => {
                 menuDropdown.classList.remove('show');
-                replyingTo = { user: data.user, text: data.text };
+                replyingTo = { user: data.user, text: data.text, color: data.color };
                 replyPreviewUser.textContent = `Respondiendo a ${data.user}:`;
+                replyPreviewUser.style.color = data.color;
                 replyPreviewText.textContent = data.text;
                 replyPreviewContainer.style.display = 'flex';
                 input.focus();
             });
 
-            editBtn.addEventListener('click', () => {
-                menuDropdown.classList.remove('show');
-                selectedMsgId = data.id;
-                const currentText = item.querySelector('.msg-text-content').textContent;
-                editMsgInput.value = currentText;
-                editMsgModal.style.display = 'flex';
-            });
+            if (editBtn) {
+                editBtn.addEventListener('click', () => {
+                    menuDropdown.classList.remove('show');
+                    selectedMsgId = data.id;
+                    const currentText = item.querySelector('.msg-text-content').textContent;
+                    editMsgInput.value = currentText;
+                    editMsgModal.style.display = 'flex';
+                });
+            }
 
-            delBtn.addEventListener('click', () => {
-                menuDropdown.classList.remove('show');
-                socket.emit('delete message', data.id);
-            });
+            if (delBtn) {
+                delBtn.addEventListener('click', () => {
+                    menuDropdown.classList.remove('show');
+                    socket.emit('delete message', data.id);
+                });
+            }
+
+            // Lógica de Autoscroll inteligente
+            const isScrolledToBottom = messages.scrollHeight - messages.clientHeight <= messages.scrollTop + 100;
 
             messages.appendChild(item);
-            messages.scrollTop = messages.scrollHeight;
+
+            if (isScrolledToBottom || isMe) {
+                messages.scrollTop = messages.scrollHeight;
+            }
         });
 
         socket.on('message deleted', (msgId) => {
@@ -1188,8 +1243,6 @@
                 leftDiv.className = 'user-left';
 
                 const dotClass = uData.isFirst ? 'status-dot first-user' : 'status-dot';
-                
-                // Generar inicial para el avatar
                 const initial = uData.nickname ? uData.nickname.charAt(0).toUpperCase() : '?';
 
                 leftDiv.innerHTML = `
