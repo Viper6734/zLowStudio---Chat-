@@ -10,6 +10,113 @@ const io = new Server(server, {
 
 app.use(express.static('public'));
 
+// ============================================================
+// GIFs: proxy en el servidor para no exponer la API key en el navegador.
+// La API de Tenor se apagó el 30/06/2026, por eso se usa Klipy (API casi
+// idéntica a Tenor) o Giphy. Configura con variables de entorno:
+//   GIF_API_KEY=tu_clave
+//   GIF_PROVIDER=klipy   (o "giphy")
+// ============================================================
+const GIF_API_KEY = process.env.GIF_API_KEY || '';
+const GIF_PROVIDER = (process.env.GIF_PROVIDER || 'klipy').toLowerCase();
+const GIF_PAGE_SIZE = 24;
+const GIF_CACHE_TTL = 5 * 60 * 1000;
+const gifCache = new Map();
+
+function isHttps(u) {
+    return typeof u === 'string' && /^https:\/\//i.test(u);
+}
+
+function normalizeKlipy(json) {
+    const d = json && json.data;
+    const list = d && Array.isArray(d.data) ? d.data : (Array.isArray(d) ? d : []);
+    const items = list.map(g => {
+        if (!g || g.type === 'ad' || g.kind === 'ad' || !g.file) return null;
+        const f = g.file;
+        const small = (f.sm || f.xs || f.md || f.hd || {}).gif;
+        const medium = (f.md || f.sm || f.hd || f.xs || {}).gif;
+        if (!small || !medium || !isHttps(small.url) || !isHttps(medium.url)) return null;
+        return {
+            id: String(g.slug || g.id),
+            title: g.title || 'GIF',
+            preview: small.url,
+            url: medium.url,
+            w: small.width || 0,
+            h: small.height || 0
+        };
+    }).filter(Boolean);
+    return { items, hasNext: !!(d && (d.has_next || d.hasNext)) };
+}
+
+function normalizeGiphy(json, offset) {
+    const list = Array.isArray(json && json.data) ? json.data : [];
+    const items = list.map(g => {
+        const img = g && g.images;
+        if (!img) return null;
+        const small = img.fixed_height_small || img.fixed_height;
+        const medium = img.fixed_height || img.original;
+        if (!small || !medium || !isHttps(small.url) || !isHttps(medium.url)) return null;
+        return {
+            id: String(g.id),
+            title: g.title || 'GIF',
+            preview: small.url,
+            url: medium.url,
+            w: Number(small.width) || 0,
+            h: Number(small.height) || 0
+        };
+    }).filter(Boolean);
+    const p = json && json.pagination;
+    const hasNext = !!(p && p.total_count > offset + (p.count || list.length));
+    return { items, hasNext };
+}
+
+app.get('/api/gifs', async (req, res) => {
+    if (!GIF_API_KEY) return res.status(503).json({ error: 'no-key' });
+    if (typeof fetch !== 'function') return res.status(500).json({ error: 'node-too-old' });
+
+    const q = String(req.query.q || '').trim().slice(0, 80);
+    const page = Math.min(Math.max(parseInt(req.query.page, 10) || 1, 1), 50);
+    const cid = /^[\w-]{1,64}$/.test(String(req.query.cid || '')) ? String(req.query.cid) : 'anon';
+
+    const cacheKey = `${GIF_PROVIDER}|${q.toLowerCase()}|${page}`;
+    const cached = gifCache.get(cacheKey);
+    if (cached && Date.now() - cached.t < GIF_CACHE_TTL) return res.json(cached.data);
+
+    let url;
+    if (GIF_PROVIDER === 'giphy') {
+        const params = new URLSearchParams({
+            api_key: GIF_API_KEY,
+            limit: GIF_PAGE_SIZE,
+            offset: (page - 1) * GIF_PAGE_SIZE,
+            rating: 'g'
+        });
+        if (q) params.set('q', q);
+        url = `https://api.giphy.com/v1/gifs/${q ? 'search' : 'trending'}?${params}`;
+    } else {
+        const params = new URLSearchParams({ page, per_page: GIF_PAGE_SIZE, customer_id: cid });
+        if (q) params.set('q', q);
+        url = `https://api.klipy.com/api/v1/${encodeURIComponent(GIF_API_KEY)}/gifs/${q ? 'search' : 'trending'}?${params}`;
+    }
+
+    try {
+        const resp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+        if (!resp.ok) return res.status(502).json({ error: 'provider-' + resp.status });
+        const json = await resp.json();
+
+        const parsed = GIF_PROVIDER === 'giphy'
+            ? normalizeGiphy(json, (page - 1) * GIF_PAGE_SIZE)
+            : normalizeKlipy(json);
+
+        const data = { ...parsed, provider: GIF_PROVIDER === 'giphy' ? 'GIPHY' : 'KLIPY' };
+
+        if (gifCache.size > 300) gifCache.clear();
+        gifCache.set(cacheKey, { t: Date.now(), data });
+        res.json(data);
+    } catch (err) {
+        res.status(502).json({ error: 'fetch-failed' });
+    }
+});
+
 const AVAILABLE_COLORS = [
     '#ff4757', '#2ed573', '#1e90ff', '#ffa502', '#eccc68',
     '#ff6b81', '#70a1ff', '#7bed9f', '#ff7f50', '#a29bfe',
@@ -66,6 +173,11 @@ io.on('connection', (socket) => {
             typingUsers.delete(socket.id);
             broadcastTypingStatus();
 
+            let image = data.image || null;
+            if (typeof image !== 'string' || !(image.startsWith('data:image/') || /^https:\/\//i.test(image))) {
+                image = null;
+            }
+
             const msgData = {
                 id: msgId,
                 senderId: socket.id,
@@ -73,7 +185,7 @@ io.on('connection', (socket) => {
                 avatar: users[socket.id].avatar,
                 color: users[socket.id].color,
                 text: data.text || '',
-                image: data.image || null,
+                image: image,
                 audio: data.audio || null, // <--- SE AGREGÓ EL AUDIO
                 time: data.time,
                 replyTo: data.replyTo || null,
