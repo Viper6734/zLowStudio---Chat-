@@ -1237,6 +1237,214 @@
         }
         .emoji-item:hover { background: var(--hover-bg); }
 
+        /* --- BARRA DE GRABACIÓN DE AUDIO (adaptada al tema) --- */
+        .recording-bar {
+            display: none;
+            flex: 1;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            height: 38px;
+            padding: 0 6px;
+        }
+        .chat-form.is-recording .recording-bar { display: flex; animation: modalFadeIn 0.15s ease-out; }
+        .chat-form.is-recording #input { display: none; }
+
+        .rec-cancel {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            outline: none;
+        }
+        .rec-cancel svg { width: 18px; height: 18px; fill: currentColor; }
+        .rec-cancel:hover { color: #ff4757; background: var(--hover-bg); }
+
+        .rec-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4757;
+            flex-shrink: 0;
+            animation: recBlink 1.1s infinite ease-in-out;
+        }
+        @keyframes recBlink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.35; transform: scale(0.8); }
+        }
+
+        .rec-timer {
+            font-weight: 700;
+            font-size: 0.9rem;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-main);
+            min-width: 36px;
+            flex-shrink: 0;
+        }
+
+        .rec-wave {
+            flex: 1;
+            height: 28px;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .rec-wave i {
+            flex: 0 0 3px;
+            width: 3px;
+            height: 8%;
+            border-radius: 2px;
+            background: var(--accent-blue);
+            transition: height 0.09s linear;
+        }
+        .rec-wave i.silent { opacity: 0.35; }
+
+        .rec-signal {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-sub);
+            white-space: nowrap;
+        }
+        .rec-signal .sig-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2ed573;
+            color: #2ed573;
+            box-shadow: 0 0 6px currentColor;
+        }
+        .rec-signal[data-state="low"] .sig-dot { background: #ffa502; color: #ffa502; }
+        .rec-signal[data-state="high"] .sig-dot { background: #ffa502; color: #ffa502; }
+        .rec-signal[data-state="bad"] .sig-dot { background: #ff4757; color: #ff4757; }
+        .rec-signal[data-state="bad"] .rec-signal-text { color: #ff4757; }
+
+        @media (max-width: 600px) {
+            .rec-signal-text { display: none; }
+        }
+
+        /* --- REPRODUCTOR DE NOTAS DE VOZ ESTILO APP --- */
+        .voice-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 270px;
+            max-width: 100%;
+            padding: 2px 0;
+        }
+        .voice-play-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0, 0, 0, 0.28);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.15s, background-color 0.2s;
+        }
+        .voice-play-btn:hover { transform: scale(1.08); background: rgba(0, 0, 0, 0.4); }
+        .voice-play-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        .voice-play-btn .ic-pause { display: none; }
+        .voice-play-btn.playing .ic-play { display: none; }
+        .voice-play-btn.playing .ic-pause { display: block; }
+
+        .voice-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .voice-wave {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            height: 30px;
+            cursor: pointer;
+            touch-action: none;
+            filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+        }
+        .voice-wave i {
+            flex: 1;
+            min-width: 2px;
+            max-width: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.45);
+        }
+        .voice-wave i.on { background: #ffffff; }
+        .voice-thumb {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 12px;
+            height: 12px;
+            margin: -6px 0 0 -6px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+            pointer-events: none;
+        }
+        .voice-time {
+            font-size: 0.7rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .voice-avatar {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+        }
+        .received-msg .voice-avatar { order: -1; }
+        .voice-avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1rem;
+            color: #ffffff;
+        }
+        .voice-mic-badge {
+            position: absolute;
+            right: -3px;
+            bottom: -3px;
+            width: 19px;
+            height: 19px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.55);
+            border: 2px solid var(--bubble, transparent);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .voice-mic-badge svg { width: 10px; height: 10px; fill: currentColor; }
+
         /* --- SELECTOR DE GIFS (adaptado al tema) --- */
         .gif-toggle-btn {
             background: transparent;
@@ -1719,6 +1927,20 @@
                 <button type="button" class="attach-btn" id="attach-btn" title="Cargar o pegar imagen">+</button>
 
                 <input type="text" id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ para mencionar)" />
+
+                <!-- BARRA DE GRABACIÓN (visible solo mientras se graba) -->
+                <div class="recording-bar" id="recording-bar">
+                    <button type="button" class="rec-cancel" id="rec-cancel-btn" title="Cancelar grabación">
+                        <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                    </button>
+                    <span class="rec-dot"></span>
+                    <span class="rec-timer" id="rec-timer">0:00</span>
+                    <div class="rec-wave" id="rec-wave"></div>
+                    <div class="rec-signal" id="rec-signal" data-state="ok">
+                        <span class="sig-dot"></span>
+                        <span class="rec-signal-text" id="rec-signal-text">Escuchando…</span>
+                    </div>
+                </div>
                 
                 <!-- BOTÓN GRABAR AUDIO -->
                 <button type="button" class="mic-btn" id="mic-btn" title="Manejar Audio">
@@ -1896,45 +2118,216 @@
         }
 
         // LÓGICA GRABACIÓN DE NOTAS DE VOZ
+        const VOICE_BARS = 40;
+        const REC_MAX_SECONDS = 300;
+        const recordingBar = document.getElementById('recording-bar');
+        const recTimerEl = document.getElementById('rec-timer');
+        const recWaveEl = document.getElementById('rec-wave');
+        const recSignalEl = document.getElementById('rec-signal');
+        const recSignalText = document.getElementById('rec-signal-text');
+        const recCancelBtn = document.getElementById('rec-cancel-btn');
+
+        let recCtx = null;
+        let recAnalyser = null;
+        let recTimerId = null;
+        let recStartTs = 0;
+        let recPeaks = [];
+        let recLive = [];
+        let recWindow = [];
+        let recFrameRms = 0;
+        let recFramePeak = 0;
+        let recLastSample = 0;
+        let recCancelled = false;
+        let recDuration = 0;
+        let recTrack = null;
+
+        for (let i = 0; i < VOICE_BARS; i++) recWaveEl.appendChild(document.createElement('i'));
+        const recBarEls = Array.from(recWaveEl.children);
+
+        function fmtClock(sec) {
+            sec = Math.max(0, Math.floor(sec || 0));
+            return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+        }
+
+        function setRecSignal(state, text) {
+            if (recSignalEl.dataset.state !== state) recSignalEl.dataset.state = state;
+            if (recSignalText.textContent !== text) recSignalText.textContent = text;
+        }
+
+        function evaluateSignal(elapsed) {
+            if (recTrack && (recTrack.readyState === 'ended' || recTrack.muted)) {
+                return setRecSignal('bad', 'Micrófono sin señal');
+            }
+            if (elapsed < 1.2 || recWindow.length < 8) {
+                return setRecSignal('ok', 'Escuchando…');
+            }
+            const maxRms = Math.max(...recWindow.map(w => w.rms));
+            const clipped = recWindow.filter(w => w.peak >= 0.98).length;
+
+            if (maxRms < 0.004) setRecSignal('bad', 'Sin señal de voz');
+            else if (clipped >= 3) setRecSignal('high', 'Muy fuerte, se distorsiona');
+            else if (maxRms < 0.02) setRecSignal('low', 'Volumen bajo');
+            else setRecSignal('ok', 'Señal estable');
+        }
+
+        function paintRecWave() {
+            const shown = recLive.slice(-VOICE_BARS);
+            const offset = VOICE_BARS - shown.length;
+            recBarEls.forEach((el, idx) => {
+                const v = idx < offset ? 0 : shown[idx - offset];
+                el.style.height = Math.max(8, Math.round(v * 100)) + '%';
+                el.classList.toggle('silent', v < 0.06);
+            });
+        }
+
+        function startMeter(stream) {
+            try {
+                recCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const src = recCtx.createMediaStreamSource(stream);
+                recAnalyser = recCtx.createAnalyser();
+                recAnalyser.fftSize = 1024;
+                src.connect(recAnalyser);
+            } catch (e) {
+                recAnalyser = null;
+            }
+
+            const buf = recAnalyser ? new Uint8Array(recAnalyser.fftSize) : null;
+            recStartTs = Date.now();
+            recLastSample = performance.now();
+            recPeaks = [];
+            recLive = [];
+            recWindow = [];
+            recFrameRms = 0;
+            recFramePeak = 0;
+            recTimerEl.textContent = '0:00';
+            setRecSignal('ok', 'Escuchando…');
+            paintRecWave();
+
+            recTimerId = setInterval(() => {
+                const elapsed = (Date.now() - recStartTs) / 1000;
+                recTimerEl.textContent = fmtClock(elapsed);
+
+                if (buf) {
+                    recAnalyser.getByteTimeDomainData(buf);
+                    let sum = 0, pk = 0;
+                    for (let i = 0; i < buf.length; i++) {
+                        const v = (buf[i] - 128) / 128;
+                        sum += v * v;
+                        const a = Math.abs(v);
+                        if (a > pk) pk = a;
+                    }
+                    recFrameRms = Math.max(recFrameRms, Math.sqrt(sum / buf.length));
+                    recFramePeak = Math.max(recFramePeak, pk);
+                }
+
+                const now = performance.now();
+                if (now - recLastSample >= 100) {
+                    const level = Math.min(1, Math.sqrt(recFrameRms) * 1.6);
+                    recPeaks.push(level);
+                    recLive.push(level);
+                    if (recLive.length > VOICE_BARS) recLive.shift();
+                    recWindow.push({ rms: recFrameRms, peak: recFramePeak });
+                    if (recWindow.length > 15) recWindow.shift();
+                    recFrameRms = 0;
+                    recFramePeak = 0;
+                    recLastSample = now;
+                    paintRecWave();
+                    evaluateSignal(elapsed);
+                }
+
+                if (elapsed >= REC_MAX_SECONDS && isRecording) stopRecording(false);
+            }, 50);
+        }
+
+        function stopMeter() {
+            clearInterval(recTimerId);
+            recTimerId = null;
+            if (recCtx) { recCtx.close().catch(() => {}); recCtx = null; }
+            recAnalyser = null;
+        }
+
+        function buildFinalWaveform() {
+            const n = recPeaks.length;
+            if (!n) return new Array(VOICE_BARS).fill(12);
+            const out = [];
+            for (let i = 0; i < VOICE_BARS; i++) {
+                const a = Math.floor(i * n / VOICE_BARS);
+                const b = Math.max(a + 1, Math.floor((i + 1) * n / VOICE_BARS));
+                let m = 0;
+                for (let k = a; k < b && k < n; k++) m = Math.max(m, recPeaks[k]);
+                out.push(m);
+            }
+            const peak = Math.max(...out, 0.15);
+            return out.map(v => Math.round(Math.min(100, Math.max(10, Math.sqrt(v / peak) * 100))));
+        }
+
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                recCancelled = false;
+                recTrack = stream.getAudioTracks()[0] || null;
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    stream.getTracks().forEach(track => track.stop());
+                    recTrack = null;
+                    if (recCancelled || recDuration < 0.5) return;
+
+                    const waveform = buildFinalWaveform();
+                    const duration = Math.round(recDuration * 10) / 10;
+                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => sendAudioMessage(reader.result, { waveform, duration });
+                    reader.readAsDataURL(audioBlob);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.classList.add('recording');
+                micBtn.title = 'Detener y enviar';
+                form.classList.add('is-recording');
+                emojiPickerPopup.classList.remove('show');
+                closeGifPicker();
+                mentionsPopup.classList.remove('show');
+                startMeter(stream);
+                triggerHapticFeedback(800, 0.1); // Tono de inicio satisfactorio
+            } catch (err) {
+                alert('No se pudo acceder al micrófono.');
+            }
+        }
+
+        function stopRecording(cancel) {
+            if (!isRecording || !mediaRecorder) return;
+            recCancelled = !!cancel;
+            recDuration = (Date.now() - recStartTs) / 1000;
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            micBtn.title = 'Manejar Audio';
+            form.classList.remove('is-recording');
+            stopMeter();
+            mediaRecorder.stop();
+        }
+
         micBtn.addEventListener('click', async () => {
             if (!isRecording) {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-
-                    mediaRecorder.ondataavailable = (e) => {
-                        if (e.data.size > 0) audioChunks.push(e.data);
-                    };
-
-                    mediaRecorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                            const base64Audio = reader.result;
-                            sendAudioMessage(base64Audio);
-                        };
-                        reader.readAsDataURL(audioBlob);
-
-                        stream.getTracks().forEach(track => track.stop());
-                    };
-
-                    mediaRecorder.start();
-                    isRecording = true;
-                    micBtn.classList.add('recording');
-                    triggerHapticFeedback(800, 0.1); // Tono de inicio satisfactorio
-                } catch (err) {
-                    alert('No se pudo acceder al micrófono.');
-                }
+                await startRecording();
             } else {
-                mediaRecorder.stop();
-                isRecording = false;
-                micBtn.classList.remove('recording');
+                stopRecording(false);
                 triggerHapticFeedback(400, 0.1); // Tono finalización
             }
         });
 
-        function sendAudioMessage(base64Audio) {
+        recCancelBtn.addEventListener('click', () => {
+            stopRecording(true);
+            triggerHapticFeedback(300, 0.1);
+        });
+
+        function sendAudioMessage(base64Audio, meta = {}) {
             const now = new Date();
             const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -1946,12 +2339,151 @@
                 text: '',
                 image: null,
                 audio: base64Audio,
+                waveform: meta.waveform || null,
+                duration: meta.duration || 0,
                 time: timeStr,
                 replyTo: replyingTo
             });
 
             replyingTo = null;
             replyPreviewContainer.style.display = 'none';
+        }
+
+        // ====== REPRODUCTOR DE NOTAS DE VOZ (ESTILO APP) ======
+        let activeVoice = null;
+
+        function normalizeWave(arr) {
+            if (!Array.isArray(arr) || !arr.length) return null;
+            const out = [];
+            for (let i = 0; i < VOICE_BARS; i++) {
+                const v = Number(arr[Math.min(arr.length - 1, Math.floor(i * arr.length / VOICE_BARS))]) || 0;
+                out.push(Math.round(Math.min(100, Math.max(10, v))));
+            }
+            return out;
+        }
+
+        function fallbackWave(seed) {
+            let h = 7;
+            const s = String(seed || 'x');
+            for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+            const out = [];
+            for (let i = 0; i < VOICE_BARS; i++) {
+                h = (Math.imul(h, 1103515245) + 12345) | 0;
+                out.push(22 + (Math.abs(h >> 8) % 60));
+            }
+            return out;
+        }
+
+        function buildVoicePlayerHtml(data) {
+            const wave = normalizeWave(data.waveform) || fallbackWave(data.id);
+            const bars = wave.map(v => `<i style="height:${v}%"></i>`).join('');
+            const initial = data.user ? data.user.charAt(0).toUpperCase() : '?';
+            const avatar = data.avatar
+                ? `<img src="${data.avatar}" class="voice-avatar-img" alt="">`
+                : `<div class="voice-avatar-img" style="background: rgba(0,0,0,0.25)">${initial}</div>`;
+            const dur = Number(data.duration) || 0;
+
+            return `
+                <div class="voice-player" style="--bubble: ${data.color}">
+                    <button class="voice-play-btn" type="button" aria-label="Reproducir">
+                        <svg class="ic-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        <svg class="ic-pause" viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>
+                    </button>
+                    <div class="voice-main">
+                        <div class="voice-wave">${bars}<span class="voice-thumb"></span></div>
+                        <span class="voice-time">${fmtClock(dur)}</span>
+                    </div>
+                    <div class="voice-avatar">
+                        ${avatar}
+                        <span class="voice-mic-badge"><svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg></span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function initVoicePlayer(item, data) {
+            const audio = new Audio(data.audio);
+            audio.preload = 'metadata';
+
+            const btn = item.querySelector('.voice-play-btn');
+            const wave = item.querySelector('.voice-wave');
+            const thumb = item.querySelector('.voice-thumb');
+            const timeEl = item.querySelector('.voice-time');
+            const bars = Array.from(wave.querySelectorAll('i'));
+
+            let knownDur = Number(data.duration) || 0;
+            let raf = null;
+            let dragging = false;
+
+            const getDur = () => knownDur || (isFinite(audio.duration) ? audio.duration : 0);
+
+            const render = () => {
+                const d = getDur();
+                const t = audio.currentTime || 0;
+                const p = d ? Math.min(1, t / d) : 0;
+                thumb.style.left = (p * 100) + '%';
+                const on = Math.round(p * bars.length);
+                bars.forEach((b, i) => b.classList.toggle('on', i < on));
+                timeEl.textContent = p > 0 ? fmtClock(t) : fmtClock(d);
+            };
+
+            const loop = () => {
+                render();
+                if (!audio.paused) raf = requestAnimationFrame(loop);
+            };
+
+            const api = { pause: () => audio.pause() };
+
+            audio.addEventListener('loadedmetadata', () => {
+                if (!knownDur && isFinite(audio.duration)) { knownDur = audio.duration; render(); }
+            });
+
+            audio.addEventListener('play', () => {
+                btn.classList.add('playing');
+                btn.setAttribute('aria-label', 'Pausar');
+                activeVoice = api;
+                cancelAnimationFrame(raf);
+                loop();
+            });
+
+            audio.addEventListener('pause', () => {
+                btn.classList.remove('playing');
+                btn.setAttribute('aria-label', 'Reproducir');
+                render();
+            });
+
+            audio.addEventListener('ended', () => {
+                btn.classList.remove('playing');
+                audio.currentTime = 0;
+                if (activeVoice === api) activeVoice = null;
+                render();
+            });
+
+            btn.addEventListener('click', () => {
+                if (audio.paused) {
+                    if (activeVoice && activeVoice !== api) activeVoice.pause();
+                    audio.play().catch(() => {});
+                } else {
+                    audio.pause();
+                }
+            });
+
+            const seekFromEvent = (e) => {
+                const r = wave.getBoundingClientRect();
+                const p = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+                const d = getDur();
+                if (d) { audio.currentTime = p * d; render(); }
+            };
+
+            wave.addEventListener('pointerdown', (e) => {
+                dragging = true;
+                wave.setPointerCapture(e.pointerId);
+                seekFromEvent(e);
+            });
+            wave.addEventListener('pointermove', (e) => { if (dragging) seekFromEvent(e); });
+            ['pointerup', 'pointercancel'].forEach(ev => wave.addEventListener(ev, () => { dragging = false; }));
+
+            render();
         }
 
         pencilAvatarBtn.addEventListener('click', () => avatarFileInput.click());
@@ -2630,20 +3162,7 @@
             let imageHtml = data.image ? `<img src="${data.image}" class="msg-image${imageIsGif ? ' msg-gif' : ''}"${imageIsGif ? ' loading="lazy"' : ''} onclick="openImageViewer(this.src)" />` : '';
 
             // RENDERIZADO DE NOTA DE VOZ (REPRODUCTOR MINIMALISTA)
-            let audioHtml = '';
-            if (data.audio) {
-                audioHtml = `
-                    <div class="audio-player-card">
-                        <button class="audio-play-btn" type="button">▶</button>
-                        <div class="audio-body">
-                            <div class="audio-track-line">
-                                <div class="audio-progress-fill"></div>
-                            </div>
-                            <span class="audio-time-label">0:00</span>
-                        </div>
-                    </div>
-                `;
-            }
+            const audioHtml = data.audio ? buildVoicePlayerHtml(data) : '';
 
             item.innerHTML = `
                 ${userAvatarHtml}
@@ -2686,50 +3205,7 @@
             `;
 
             // INICIALIZACIÓN DEL REPRODUCTOR AUDIO
-            if (data.audio) {
-                const audioObj = new Audio(data.audio);
-                const playBtn = item.querySelector('.audio-play-btn');
-                const progressFill = item.querySelector('.audio-progress-fill');
-                const timeLabel = item.querySelector('.audio-time-label');
-                const trackLine = item.querySelector('.audio-track-line');
-
-                audioObj.addEventListener('loadedmetadata', () => {
-                    const durationStr = formatTime(audioObj.duration);
-                    timeLabel.textContent = `0:00 / ${durationStr}`;
-                });
-
-                audioObj.addEventListener('timeupdate', () => {
-                    if (audioObj.duration) {
-                        const pct = (audioObj.currentTime / audioObj.duration) * 100;
-                        progressFill.style.width = pct + '%';
-                        timeLabel.textContent = `${formatTime(audioObj.currentTime)} / ${formatTime(audioObj.duration)}`;
-                    }
-                });
-
-                audioObj.addEventListener('ended', () => {
-                    playBtn.textContent = '▶';
-                    progressFill.style.width = '0%';
-                    timeLabel.textContent = `0:00 / ${formatTime(audioObj.duration)}`;
-                });
-
-                playBtn.addEventListener('click', () => {
-                    if (audioObj.paused) {
-                        audioObj.play();
-                        playBtn.textContent = '⏸';
-                    } else {
-                        audioObj.pause();
-                        playBtn.textContent = '▶';
-                    }
-                });
-
-                trackLine.addEventListener('click', (e) => {
-                    const rect = trackLine.getBoundingClientRect();
-                    const clickPos = (e.clientX - rect.left) / rect.width;
-                    if (audioObj.duration) {
-                        audioObj.currentTime = clickPos * audioObj.duration;
-                    }
-                });
-            }
+            if (data.audio) initVoicePlayer(item, data);
 
             function formatTime(seconds) {
                 if (isNaN(seconds)) return '0:00';
