@@ -3,18 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Pro - Modales Personalizados</title>
+    <title>Chat Online</title>
+    <!-- Fuentes Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fira+Code:wght@400;600&family=Poppins:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    
     <style>
+        :root {
+            --bg-body: #0b0b0e;
+            --bg-container: #111115;
+            --bg-sidebar: #16161c;
+            --bg-modal: #141418;
+            --bg-input: #181820;
+            --border-color: #1f1f26;
+            --text-main: #ffffff;
+            --text-sub: #aaaaaa;
+            --accent-blue: #007bff;
+            --font-family: 'Inter', sans-serif;
+        }
+
+        /* Temas de Interfaz */
+        body.theme-cyberpunk {
+            --bg-body: #0d0221;
+            --bg-container: #0f0826;
+            --bg-sidebar: #180e36;
+            --bg-modal: #1c103f;
+            --bg-input: #261654;
+            --border-color: #ff0055;
+            --text-main: #00f6ff;
+            --text-sub: #ff77a9;
+            --accent-blue: #ff0055;
+        }
+
+        body.theme-midnight {
+            --bg-body: #030814;
+            --bg-container: #0a1128;
+            --bg-sidebar: #0f1c3f;
+            --bg-modal: #13224f;
+            --bg-input: #1c2d5a;
+            --border-color: #1c3166;
+            --text-main: #e0f2fe;
+            --text-sub: #7dd3fc;
+            --accent-blue: #0284c7;
+        }
+
+        body.theme-light {
+            --bg-body: #eef2f6;
+            --bg-container: #ffffff;
+            --bg-sidebar: #f8fafc;
+            --bg-modal: #ffffff;
+            --bg-input: #f1f5f9;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-sub: #64748b;
+            --accent-blue: #2563eb;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: var(--font-family);
+            transition: background-color 0.2s, color 0.2s, border-color 0.2s;
         }
 
         body {
-            background-color: #0b0b0e;
-            color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -22,7 +76,18 @@
             padding: 20px;
         }
 
-        /* Estilo Base de Modales */
+        /* Ocultar Barra de Scroll visual pero mantener scroll funcional */
+        ::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+            background: transparent;
+        }
+        * {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        /* Modales */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -30,7 +95,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.88);
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(5px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -38,13 +103,14 @@
         }
 
         .modal-box {
-            background: #141418;
+            background: var(--bg-modal);
             padding: 30px;
-            border-radius: 12px;
-            border: 1px solid #26262e;
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
             text-align: center;
             box-shadow: 0 12px 35px rgba(0, 0, 0, 0.8);
-            width: 340px;
+            width: 360px;
+            max-width: 90vw;
             animation: modalFadeIn 0.25s ease-out;
         }
 
@@ -60,67 +126,69 @@
 
         .modal-box p {
             font-size: 0.95rem;
-            color: #aaa;
+            color: var(--text-sub);
             margin-bottom: 20px;
             line-height: 1.4;
         }
 
-        .modal-box input {
+        .modal-box input, .modal-box select {
             width: 100%;
             padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #333;
-            background: #1e1e24;
-            color: #fff;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-input);
+            color: var(--text-main);
             margin-bottom: 15px;
             outline: none;
-            text-align: center;
+        }
+
+        .setting-group {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        .setting-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+            font-weight: 600;
         }
 
         .modal-box button {
             width: 100%;
             padding: 12px;
             border: none;
-            border-radius: 6px;
-            background: #007bff;
+            border-radius: 8px;
+            background: var(--accent-blue);
             color: white;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
         }
 
-        .modal-box button:hover {
-            background: #0056b3;
-        }
-
-        /* Botón Admin en Esquina */
+        /* Botón Admin */
         #admin-trigger {
             position: absolute;
             top: 15px;
             right: 20px;
-            background: #1a1a22;
-            border: 1px solid #333;
-            color: #888;
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-color);
+            color: var(--text-sub);
             padding: 6px 12px;
             border-radius: 6px;
             font-size: 0.8rem;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-        #admin-trigger:hover {
-            color: #fff;
-            border-color: #007bff;
         }
 
-        /* Layout Principal */
+        /* Container Principal */
         .chat-container {
             display: flex;
             width: 100%;
             max-width: 1000px;
             height: 82vh;
-            background: #111115;
-            border-radius: 12px;
-            border: 1px solid #1f1f26;
+            background: var(--bg-container);
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
             overflow: hidden;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
             position: relative;
@@ -133,16 +201,55 @@
             padding: 20px;
         }
 
+        /* Encabezado Moderno */
         .chat-header {
-            font-size: 1.1rem;
-            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             padding-bottom: 15px;
-            border-bottom: 1px solid #1f1f26;
+            border-bottom: 1px solid var(--border-color);
             margin-bottom: 15px;
-            color: #ccc;
         }
 
-        /* Animaciones para Mensajes */
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.15rem;
+        }
+
+        .online-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(40, 167, 69, 0.15);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            color: #28a745;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .settings-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: var(--text-sub);
+            padding: 4px;
+            border-radius: 50%;
+        }
+        .settings-btn:hover { color: var(--text-main); }
+
+        /* Mensajes y Animaciones */
         @keyframes sentBubble {
             0% { opacity: 0; transform: scale(0.2) translateY(30px) rotate(-5deg); }
             70% { transform: scale(1.05) translateY(-3px) rotate(1deg); }
@@ -186,7 +293,7 @@
             color: #ffffff;
             padding: 12px 16px;
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
@@ -197,7 +304,7 @@
             display: flex;
             justify-content: space-between;
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255, 255, 255, 0.85);
             margin-bottom: 4px;
             gap: 15px;
         }
@@ -210,7 +317,7 @@
         #messages li.system {
             background: transparent;
             border: none;
-            color: #777;
+            color: var(--text-sub);
             font-style: italic;
             text-align: center;
             align-self: center;
@@ -229,40 +336,41 @@
         .chat-form input {
             flex: 1;
             padding: 12px;
-            border-radius: 6px;
-            border: 1px solid #2a2a35;
-            background: #181820;
-            color: #fff;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-input);
+            color: var(--text-main);
             outline: none;
         }
 
         .chat-form button {
             padding: 12px 24px;
             border: none;
-            border-radius: 6px;
-            background: #007bff;
+            border-radius: 8px;
+            background: var(--accent-blue);
             color: white;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
         }
 
-        .chat-form button:hover { background: #0056b3; }
-
-        /* Panel Lateral */
+        /* Sidebar de Usuarios */
         .users-sidebar {
             width: 280px;
-            background: #16161c;
-            border-left: 1px solid #1f1f26;
+            background: var(--bg-sidebar);
+            border-left: 1px solid var(--border-color);
             padding: 20px;
             display: flex;
             flex-direction: column;
         }
 
+        .users-sidebar.focus-mode {
+            display: none !important;
+        }
+
         .users-sidebar h3 {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             margin-bottom: 15px;
-            color: #aaa;
+            color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -279,9 +387,9 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: #1d1d26;
+            background: var(--bg-input);
             padding: 8px 12px;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 0.9rem;
         }
 
@@ -293,12 +401,17 @@
         }
 
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 9px;
+            height: 9px;
             background-color: #28a745;
             border-radius: 50%;
             box-shadow: 0 0 6px #28a745;
             flex-shrink: 0;
+        }
+
+        .status-dot.first-user {
+            background-color: #ffcc00;
+            box-shadow: 0 0 8px #ffcc00;
         }
 
         .user-actions {
@@ -338,7 +451,6 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .kick-btn:hover { background: #e0a800; }
     </style>
 </head>
 <body>
@@ -355,7 +467,52 @@
         </div>
     </div>
 
-    <!-- Modal Editar Nombre (Reemplaza a prompt) -->
+    <!-- Modal SETTINGS -->
+    <div id="settings-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <h2 id="st-title">⚙️ Configuración</h2>
+            
+            <div class="setting-group">
+                <label id="st-label-font">Fuente del texto</label>
+                <select id="setting-font">
+                    <option value="'Inter', sans-serif">Inter (Moderna)</option>
+                    <option value="'Roboto', sans-serif">Roboto (Limpia)</option>
+                    <option value="'Poppins', sans-serif">Poppins (Display)</option>
+                    <option value="'Fira Code', monospace">Code (Programador)</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label id="st-label-theme">Tema de Interfaz</label>
+                <select id="setting-theme">
+                    <option value="default">Oscuro Pro (Default)</option>
+                    <option value="cyberpunk">Cyberpunk Neon</option>
+                    <option value="midnight">Midnight Blue</option>
+                    <option value="light">Modo Claro</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label id="st-label-lang">Idioma</label>
+                <select id="setting-lang">
+                    <option value="es">Español</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+
+            <div class="setting-group">
+                <label id="st-label-focus">Modo Enfoque (Ocultar Lista)</label>
+                <select id="setting-focus">
+                    <option value="off">Desactivado</option>
+                    <option value="on">Activado</option>
+                </select>
+            </div>
+
+            <button id="close-settings-btn">Guardar y Cerrar</button>
+        </div>
+    </div>
+
+    <!-- Modal Editar Nombre -->
     <div id="edit-name-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
             <h2>Cambiar Nombre</h2>
@@ -366,7 +523,7 @@
         </div>
     </div>
 
-    <!-- Modal Personalizado de KICK (Reemplaza a alert) -->
+    <!-- Modal de KICK -->
     <div id="kicked-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box" style="border-color: #dc3545;">
             <h2 style="color: #dc3545;">¡Has sido Expulsado!</h2>
@@ -375,10 +532,10 @@
         </div>
     </div>
 
-    <!-- Modal de Inicio (Apodo) -->
+    <!-- Modal Apodo de Inicio -->
     <div id="modal-overlay" class="modal-overlay">
         <div class="modal-box">
-            <h2>Ingresa al Chat</h2>
+            <h2 id="join-title">Ingresa al Chat</h2>
             <input type="text" id="nickname-input" placeholder="Tu apodo..." autocomplete="off">
             <button id="join-btn">Entrar</button>
         </div>
@@ -388,17 +545,28 @@
     <div class="chat-container">
         <div class="chat-main">
             <div class="chat-header">
-                Chat 234 | Usuario: <span id="current-user">-</span>
+                <div class="header-title">
+                    <span>Chat online</span>
+                    <span class="online-badge">
+                        <span class="status-dot"></span>
+                        <span id="txt-active">Activo</span>
+                    </span>
+                </div>
+                <div class="header-actions">
+                    <button class="settings-btn" id="open-settings-btn" title="Settings">⚙️</button>
+                </div>
             </div>
+            
             <ul id="messages"></ul>
+
             <form id="form" class="chat-form">
                 <input id="input" autocomplete="off" placeholder="Escribe un mensaje..." />
-                <button>Enviar</button>
+                <button id="btn-send">Enviar</button>
             </form>
         </div>
 
-        <div class="users-sidebar">
-            <h3>Conectados (<span id="user-count">0</span>)</h3>
+        <div class="users-sidebar" id="sidebar">
+            <h3 id="txt-sidebar-title">Conectados (<span id="user-count">0</span>)</h3>
             <ul id="users-list"></ul>
         </div>
     </div>
@@ -410,7 +578,16 @@
         const modalOverlay = document.getElementById('modal-overlay');
         const nicknameInput = document.getElementById('nickname-input');
         const joinBtn = document.getElementById('join-btn');
-        const currentUserSpan = document.getElementById('current-user');
+
+        const settingsModal = document.getElementById('settings-modal');
+        const openSettingsBtn = document.getElementById('open-settings-btn');
+        const closeSettingsBtn = document.getElementById('close-settings-btn');
+
+        const settingFont = document.getElementById('setting-font');
+        const settingTheme = document.getElementById('setting-theme');
+        const settingLang = document.getElementById('setting-lang');
+        const settingFocus = document.getElementById('setting-focus');
+        const sidebar = document.getElementById('sidebar');
 
         const adminTrigger = document.getElementById('admin-trigger');
         const adminModal = document.getElementById('admin-modal');
@@ -431,7 +608,6 @@
         const form = document.getElementById('form');
         const input = document.getElementById('input');
         const messages = document.getElementById('messages');
-
         const usersList = document.getElementById('users-list');
         const userCount = document.getElementById('user-count');
 
@@ -465,7 +641,6 @@
             const name = nicknameInput.value.trim();
             if (name !== '') {
                 myNickname = name;
-                currentUserSpan.textContent = myNickname;
                 socket.emit('join', myNickname);
                 modalOverlay.style.display = 'none';
             }
@@ -476,14 +651,65 @@
             if (e.key === 'Enter') joinChat();
         });
 
-        // Admin Access Modal
+        // Configuración - Abrir y Cerrar
+        openSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
+        closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'none');
+
+        // Configuración - Eventos
+        settingFont.addEventListener('change', (e) => {
+            document.documentElement.style.setProperty('--font-family', e.target.value);
+        });
+
+        settingTheme.addEventListener('change', (e) => {
+            document.body.className = '';
+            if (e.target.value !== 'default') {
+                document.body.classList.add('theme-' + e.target.value);
+            }
+        });
+
+        settingFocus.addEventListener('change', (e) => {
+            if (e.target.value === 'on') {
+                sidebar.classList.add('focus-mode');
+            } else {
+                sidebar.classList.remove('focus-mode');
+            }
+        });
+
+        settingLang.addEventListener('change', (e) => {
+            const lang = e.target.value;
+            if (lang === 'en') {
+                document.getElementById('txt-active').textContent = 'Active';
+                document.getElementById('st-title').textContent = '⚙️ Settings';
+                document.getElementById('st-label-font').textContent = 'Font Style';
+                document.getElementById('st-label-theme').textContent = 'Interface Theme';
+                document.getElementById('st-label-lang').textContent = 'Language';
+                document.getElementById('st-label-focus').textContent = 'Focus Mode (Hide Sidebar)';
+                document.getElementById('close-settings-btn').textContent = 'Save & Close';
+                document.getElementById('btn-send').textContent = 'Send';
+                input.placeholder = 'Type a message...';
+                document.getElementById('join-title').textContent = 'Join Chat';
+                joinBtn.textContent = 'Enter';
+            } else {
+                document.getElementById('txt-active').textContent = 'Activo';
+                document.getElementById('st-title').textContent = '⚙️ Configuración';
+                document.getElementById('st-label-font').textContent = 'Fuente del texto';
+                document.getElementById('st-label-theme').textContent = 'Tema de Interfaz';
+                document.getElementById('st-label-lang').textContent = 'Idioma';
+                document.getElementById('st-label-focus').textContent = 'Modo Enfoque (Ocultar Lista)';
+                document.getElementById('close-settings-btn').textContent = 'Guardar y Cerrar';
+                document.getElementById('btn-send').textContent = 'Enviar';
+                input.placeholder = 'Escribe un mensaje...';
+                document.getElementById('join-title').textContent = 'Ingresa al Chat';
+                joinBtn.textContent = 'Entrar';
+            }
+        });
+
+        // Admin Access
         adminTrigger.addEventListener('click', () => {
             if (!isAdmin) adminModal.style.display = 'flex';
         });
 
-        adminCloseBtn.addEventListener('click', () => {
-            adminModal.style.display = 'none';
-        });
+        adminCloseBtn.addEventListener('click', () => adminModal.style.display = 'none');
 
         adminLoginBtn.addEventListener('click', () => {
             if (adminPassInput.value === '1509') {
@@ -499,7 +725,6 @@
             }
         });
 
-        // Modal Editar Nombre
         saveNameBtn.addEventListener('click', () => {
             const newName = editNameInput.value.trim();
             if (newName !== '' && selectedTargetId) {
@@ -508,9 +733,7 @@
             }
         });
 
-        cancelNameBtn.addEventListener('click', () => {
-            editNameModal.style.display = 'none';
-        });
+        cancelNameBtn.addEventListener('click', () => editNameModal.style.display = 'none');
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -536,7 +759,7 @@
             item.innerHTML = `
                 <div class="msg-bubble" style="background-color: ${data.color}">
                     <div class="msg-info">
-                        <span><strong>[234] ${data.user}</strong></span>
+                        <span><strong>${data.user}</strong></span>
                         <span>${data.time}</span>
                     </div>
                     <div class="msg-text">${data.text}</div>
@@ -561,27 +784,30 @@
 
         function renderUsersList(usersObj) {
             usersList.innerHTML = '';
-            const entries = Object.entries(usersObj);
+            let entries = Object.entries(usersObj);
             userCount.textContent = entries.length;
+
+            // Ordenar: el primer usuario (isFirst) siempre va al inicio de la lista
+            entries.sort((a, b) => (b[1].isFirst ? 1 : 0) - (a[1].isFirst ? 1 : 0));
 
             entries.forEach(([id, uData]) => {
                 const li = document.createElement('li');
                 
                 const leftDiv = document.createElement('div');
                 leftDiv.className = 'user-left';
-                leftDiv.innerHTML = `<span class="status-dot"></span><span style="color: ${uData.color}; font-weight: bold;">${uData.nickname}</span>`;
+
+                const dotClass = uData.isFirst ? 'status-dot first-user' : 'status-dot';
+                leftDiv.innerHTML = `<span class="${dotClass}"></span><span style="color: ${uData.color}; font-weight: bold;">${uData.nickname}</span>`;
                 li.appendChild(leftDiv);
 
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'user-actions';
 
                 if (isAdmin) {
-                    // Botón Lápiz (Abre modal personalizado)
                     const editBtn = document.createElement('button');
                     editBtn.className = 'edit-btn admin-control';
                     editBtn.style.display = 'inline-block';
                     editBtn.textContent = '✏️';
-                    editBtn.title = 'Cambiar nombre';
                     editBtn.addEventListener('click', () => {
                         selectedTargetId = id;
                         editTargetText.textContent = `Ingresa el nuevo apodo para "${uData.nickname}":`;
@@ -589,18 +815,15 @@
                         editNameModal.style.display = 'flex';
                     });
 
-                    // Color picker
                     const colorPicker = document.createElement('input');
                     colorPicker.type = 'color';
                     colorPicker.className = 'color-picker-input admin-control';
                     colorPicker.style.display = 'inline-block';
                     colorPicker.value = uData.color;
-                    colorPicker.title = 'Cambiar color';
                     colorPicker.addEventListener('change', (e) => {
                         socket.emit('admin update user', { targetId: id, newName: null, newColor: e.target.value });
                     });
 
-                    // Botón Kick
                     const kickBtn = document.createElement('button');
                     kickBtn.className = 'kick-btn admin-control';
                     kickBtn.style.display = 'inline-block';
@@ -619,7 +842,6 @@
             });
         }
 
-        // Evento KICK recibido (Modal Personalizado)
         socket.on('kicked', (adminName) => {
             kickedReasonText.textContent = `El administrador "${adminName}" te ha expulsado de la sala.`;
             kickedModal.style.display = 'flex';
