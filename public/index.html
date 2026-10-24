@@ -206,7 +206,7 @@
             cursor: pointer;
         }
 
-        /* Animación de palpitación persistente en los bordes y esquinas */
+        /* Palpitación de bordes continua */
         @keyframes borderPulseGlow {
             0% {
                 box-shadow: 0 0 10px var(--border-color), inset 0 0 5px var(--border-color), 0 0 20px var(--glow-color);
@@ -230,7 +230,7 @@
             background: var(--bg-container);
             border-radius: 16px;
             border: 2px solid var(--border-color);
-            overflow: hidden;
+            overflow: visible;
             position: relative;
             animation: borderPulseGlow 4s infinite ease-in-out;
         }
@@ -240,6 +240,7 @@
             display: flex;
             flex-direction: column;
             padding: 20px;
+            min-width: 0;
         }
 
         .chat-header {
@@ -657,6 +658,7 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.4);
         }
 
+        /* Panel lateral */
         .users-sidebar {
             width: 280px;
             background: var(--bg-sidebar);
@@ -665,6 +667,9 @@
             display: flex;
             flex-direction: column;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border-top-right-radius: 14px;
+            border-bottom-right-radius: 14px;
         }
 
         .users-sidebar.collapsed {
@@ -674,7 +679,6 @@
             border-left: none !important;
         }
 
-        /* Cabecera del sidebar con el botón colapsable integrado entre las líneas */
         .sidebar-header-row {
             display: flex;
             align-items: center;
@@ -693,16 +697,33 @@
             margin: 0;
         }
 
+        /* Botón flotante ubicado sobre la línea divisoria vertical */
         .toggle-sidebar-btn {
-            background: var(--bg-input);
+            position: absolute;
+            left: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            background: var(--bg-sidebar);
             border: 1px solid var(--border-color);
-            color: var(--text-main);
-            font-size: 0.8rem;
+            color: var(--text-sub);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            padding: 4px 8px;
-            border-radius: 6px;
+            font-size: 0.75rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+            z-index: 50;
+            transition: all 0.2s ease;
         }
-        .toggle-sidebar-btn:hover { background: var(--accent-blue); border-color: var(--accent-blue); }
+        .toggle-sidebar-btn:hover {
+            background: var(--bg-input);
+            color: var(--text-main);
+            border-color: var(--accent-blue);
+            scale: 1.1;
+        }
 
         #users-list {
             list-style: none;
@@ -866,7 +887,6 @@
                 <div class="header-title">
                     <span>Chat online</span>
                     
-                    <!-- Dropdown de Estado Estilo Discord -->
                     <div class="status-dropdown-container">
                         <div class="online-badge" id="current-status-badge">
                             <span class="status-icon online" id="current-status-icon"></span>
@@ -919,11 +939,11 @@
             </form>
         </div>
 
-        <!-- Panel Lateral con Botón Desplazable Entre las Líneas de Conectados -->
+        <!-- Panel Lateral con Botón Central Siempre Visible -->
         <div class="users-sidebar" id="sidebar">
+            <button class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Ocultar/Mostrar Lista">◀</button>
             <div class="sidebar-header-row">
                 <h3 id="txt-sidebar-title">Conectados (<span id="user-count">0</span>)</h3>
-                <button class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Ocultar Lista">◀</button>
             </div>
             <ul id="users-list"></ul>
         </div>
