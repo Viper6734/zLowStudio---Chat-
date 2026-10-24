@@ -21,8 +21,6 @@ let colorIndex = 0;
 const users = {}; 
 const typingUsers = new Set();
 let messageIdCounter = 0;
-
-// Almacenamiento temporal de mensajes en memoria para las reacciones
 const messagesStore = {};
 
 function getUniqueColor() {
@@ -73,7 +71,7 @@ io.on('connection', (socket) => {
                 image: data.image || null,
                 time: data.time,
                 replyTo: data.replyTo || null,
-                reactions: {} // { '👍': [ {id, nickname, color}, ... ] }
+                reactions: {}
             };
 
             messagesStore[msgId] = msgData;
@@ -81,14 +79,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Manejo de reacciones
     socket.on('add reaction', ({ msgId, emoji }) => {
         const user = users[socket.id];
         const msg = messagesStore[msgId];
         if (user && msg) {
             if (!msg.reactions) msg.reactions = {};
 
-            // Verificar si el usuario ya reaccionó con este emoji para alternarlo (toggle)
             let alreadyReacted = false;
             Object.keys(msg.reactions).forEach(e => {
                 msg.reactions[e] = msg.reactions[e].filter(item => {
@@ -96,9 +92,8 @@ io.on('connection', (socket) => {
                         alreadyReacted = true;
                         return false;
                     }
-                    // Si ya tenía otra reacción del mismo usuario, opcionalmente la quitamos o permitimos múltiples
                     if (item.id === socket.id) {
-                        return false; // Permitir solo 1 reacción por usuario para limpieza estilo Discord
+                        return false;
                     }
                     return true;
                 });
