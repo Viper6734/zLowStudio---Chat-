@@ -58,7 +58,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Evento de escritura
     socket.on('typing', (isTyping) => {
         if (users[socket.id]) {
             socket.broadcast.emit('user typing', {
