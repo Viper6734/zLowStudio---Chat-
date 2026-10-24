@@ -52,7 +52,18 @@ io.on('connection', (socket) => {
                 user: users[socket.id].nickname,
                 color: users[socket.id].color,
                 text: data.text,
-                time: data.time
+                time: data.time,
+                replyTo: data.replyTo || null
+            });
+        }
+    });
+
+    // Evento de escritura
+    socket.on('typing', (isTyping) => {
+        if (users[socket.id]) {
+            socket.broadcast.emit('user typing', {
+                user: users[socket.id].nickname,
+                isTyping: isTyping
             });
         }
     });
