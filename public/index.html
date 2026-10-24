@@ -289,33 +289,28 @@
             100% { opacity: 1; transform: translateX(0) scaleX(1); }
         }
 
-        /* Animación avanzada de desvanecimiento por partículas / difuminado */
         @keyframes dissolveOut {
-            0% {
-                opacity: 1;
-                transform: scale(1) translateY(0);
-                filter: blur(0px);
-            }
-            50% {
-                opacity: 0.5;
-                transform: scale(0.95) translateY(-5px);
-                filter: blur(3px);
-            }
-            100% {
-                opacity: 0;
-                transform: scale(0.8) translateY(-15px);
-                filter: blur(8px);
-                max-height: 0;
-                padding-top: 0;
-                padding-bottom: 0;
-                margin: 0;
-            }
+            0% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0px); }
+            50% { opacity: 0.5; transform: scale(0.95) translateY(-5px); filter: blur(3px); }
+            100% { opacity: 0; transform: scale(0.8) translateY(-15px); filter: blur(8px); max-height: 0; padding: 0; margin: 0; }
         }
 
         @keyframes editPulse {
             0% { transform: scale(1); }
             50% { transform: scale(1.03); filter: brightness(1.2); }
             100% { transform: scale(1); }
+        }
+
+        /* Animación de entrada para el banner de respuesta */
+        @keyframes slideDownReply {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Animación de puntos saltando (Escribiendo...) */
+        @keyframes bounceDot {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
         }
 
         #messages {
@@ -379,7 +374,58 @@
             gap: 15px;
         }
 
-        /* Menú Dropdown de 3 Puntos (⋮) */
+        /* Bloque de mensaje citado dentro de la burbuja */
+        .replied-quote {
+            background: rgba(0, 0, 0, 0.25);
+            border-left: 3px solid rgba(255, 255, 255, 0.6);
+            padding: 4px 8px;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            opacity: 0.9;
+        }
+        .replied-quote .q-user {
+            font-weight: bold;
+            display: block;
+            font-size: 0.75rem;
+        }
+
+        /* Banner flotante de respuesta activa sobre el input */
+        #reply-preview-container {
+            display: none;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            animation: slideDownReply 0.2s ease-out;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .reply-preview-content {
+            font-size: 0.85rem;
+            color: var(--text-sub);
+            border-left: 3px solid var(--accent-blue);
+            padding-left: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .reply-preview-content span {
+            font-weight: bold;
+            color: var(--text-main);
+            display: block;
+        }
+        #cancel-reply-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 2px 6px;
+        }
+        #cancel-reply-btn:hover { color: #ff4757; }
+
         .msg-menu-container {
             position: relative;
             display: inline-block;
@@ -408,13 +454,11 @@
             border-radius: 6px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
             z-index: 50;
-            min-width: 110px;
+            min-width: 120px;
             overflow: hidden;
         }
 
-        .dropdown-menu.show {
-            display: block;
-        }
+        .dropdown-menu.show { display: block; }
 
         .dropdown-item {
             padding: 8px 12px;
@@ -429,17 +473,10 @@
             align-items: center;
             gap: 6px;
         }
-        .dropdown-item:hover {
-            background: rgba(255,255,255,0.1);
-        }
-        .dropdown-item.delete-opt {
-            color: #ff4757;
-        }
+        .dropdown-item:hover { background: rgba(255,255,255,0.1); }
+        .dropdown-item.delete-opt { color: #ff4757; }
 
-        .msg-text {
-            font-size: 0.95rem;
-            line-height: 1.4;
-        }
+        .msg-text { font-size: 0.95rem; line-height: 1.4; }
 
         .edited-tag {
             font-size: 0.7rem;
@@ -461,10 +498,32 @@
             max-width: 100%;
         }
 
+        /* Área de Escribiendo... con puntos animados */
+        #typing-indicator {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            height: 20px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-style: italic;
+        }
+        .typing-dots span {
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            background-color: var(--text-sub);
+            border-radius: 50%;
+            animation: bounceDot 1.4s infinite ease-in-out both;
+        }
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+
         .chat-form {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 5px;
         }
 
         .chat-form input {
@@ -485,6 +544,21 @@
             color: white;
             font-weight: bold;
             cursor: pointer;
+        }
+
+        /* Avatar circular con la inicial */
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: #000;
+            flex-shrink: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
         .users-sidebar {
@@ -527,13 +601,13 @@
         .user-left {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             overflow: hidden;
         }
 
         .status-dot {
-            width: 9px;
-            height: 9px;
+            width: 8px;
+            height: 8px;
             background-color: #28a745;
             border-radius: 50%;
             box-shadow: 0 0 6px #28a745;
@@ -588,7 +662,7 @@
 
     <button id="admin-trigger">Admin Access</button>
 
-    <!-- Modal Admin Password (Sin revelar código) -->
+    <!-- Modal Admin Password -->
     <div id="admin-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
             <h2>Panel Admin</h2>
@@ -636,7 +710,7 @@
         </div>
     </div>
 
-    <!-- Modal Editar Nombre de Usuario -->
+    <!-- Modal Editar Nombre -->
     <div id="edit-name-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
             <h2>Cambiar Nombre</h2>
@@ -647,7 +721,7 @@
         </div>
     </div>
 
-    <!-- Modal Editar Texto de Mensaje -->
+    <!-- Modal Editar Mensaje -->
     <div id="edit-msg-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
             <h2>Editar Mensaje</h2>
@@ -692,6 +766,21 @@
             </div>
             
             <ul id="messages"></ul>
+
+            <!-- Indicador de escritura dinámico -->
+            <div id="typing-indicator" style="display: none;">
+                <span id="typing-text">Alguien está escribiendo</span>
+                <div class="typing-dots"><span></span><span></span><span></span></div>
+            </div>
+
+            <!-- Banner de respuesta seleccionada -->
+            <div id="reply-preview-container">
+                <div class="reply-preview-content">
+                    <span id="reply-preview-user"></span>
+                    <span id="reply-preview-text"></span>
+                </div>
+                <button id="cancel-reply-btn" title="Cancelar respuesta">&times;</button>
+            </div>
 
             <form id="form" class="chat-form">
                 <input id="input" autocomplete="off" placeholder="Escribe un mensaje..." />
@@ -739,6 +828,14 @@
         const kickedReasonText = document.getElementById('kicked-reason-text');
         const reconnectBtn = document.getElementById('reconnect-btn');
 
+        const replyPreviewContainer = document.getElementById('reply-preview-container');
+        const replyPreviewUser = document.getElementById('reply-preview-user');
+        const replyPreviewText = document.getElementById('reply-preview-text');
+        const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+
+        const typingIndicator = document.getElementById('typing-indicator');
+        const typingText = document.getElementById('typing-text');
+
         const form = document.getElementById('form');
         const input = document.getElementById('input');
         const messages = document.getElementById('messages');
@@ -750,6 +847,8 @@
         let currentUsersData = {};
         let selectedTargetId = null;
         let selectedMsgId = null;
+        let replyingTo = null; // Guardará el objeto del mensaje al que se responde
+        let typingTimeout = null;
 
         function saveSettings(key, val) {
             localStorage.setItem('chat_' + key, val);
@@ -870,7 +969,24 @@
             btn.addEventListener('click', () => setFocusMode(btn.dataset.val));
         });
 
-        // Admin Access (Sin mostrar la contraseña literal en ningún texto de alerta)
+        // Evento de escritura (Typing)
+        input.addEventListener('input', () => {
+            socket.emit('typing', true);
+            clearTimeout(typingTimeout);
+            typingTimeout = setTimeout(() => {
+                socket.emit('typing', false);
+            }, 1000);
+        });
+
+        socket.on('user typing', (data) => {
+            if (data.isTyping) {
+                typingText.textContent = `${data.user} está escribiendo`;
+                typingIndicator.style.display = 'flex';
+            } else {
+                typingIndicator.style.display = 'none';
+            }
+        });
+
         adminTrigger.addEventListener('click', () => {
             if (!isAdmin) adminModal.style.display = 'flex';
         });
@@ -885,7 +1001,6 @@
                 adminTrigger.style.borderColor = '#28a745';
                 adminTrigger.style.color = '#28a745';
                 renderUsersList(currentUsersData);
-                refreshMessageActions();
             } else {
                 adminPassInput.value = '';
                 adminPassInput.placeholder = 'Contraseña incorrecta';
@@ -910,6 +1025,11 @@
         });
         cancelMsgBtn.addEventListener('click', () => editMsgModal.style.display = 'none');
 
+        cancelReplyBtn.addEventListener('click', () => {
+            replyingTo = null;
+            replyPreviewContainer.style.display = 'none';
+        });
+
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             if (input.value.trim()) {
@@ -918,13 +1038,16 @@
                 
                 socket.emit('chat message', {
                     text: input.value,
-                    time: timeStr
+                    time: timeStr,
+                    replyTo: replyingTo
                 });
                 input.value = '';
+                replyingTo = null;
+                replyPreviewContainer.style.display = 'none';
+                socket.emit('typing', false);
             }
         });
 
-        // Cerrar menús de 3 puntos al hacer clic fuera
         window.addEventListener('click', (e) => {
             if (!e.target.closest('.msg-menu-container')) {
                 document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
@@ -943,6 +1066,17 @@
 
             const showActions = isMe || isAdmin;
 
+            // HTML de respuesta previa si el mensaje está respondiendo a otro
+            let replyHtml = '';
+            if (data.replyTo) {
+                replyHtml = `
+                    <div class="replied-quote">
+                        <span class="q-user">${data.replyTo.user}</span>
+                        <span>${data.replyTo.text}</span>
+                    </div>
+                `;
+            }
+
             item.innerHTML = `
                 <div class="msg-bubble" style="background-color: ${data.color}">
                     <div class="msg-info">
@@ -952,31 +1086,42 @@
                             <div class="msg-menu-container" style="display: ${showActions ? 'inline-block' : 'none'};">
                                 <button class="menu-dots-btn" title="Opciones">⋮</button>
                                 <div class="dropdown-menu">
+                                    <button class="dropdown-item reply-msg-btn">↩️ Responder</button>
                                     <button class="dropdown-item edit-msg-btn">✏️ Editar</button>
                                     <button class="dropdown-item delete-opt del-msg-btn">🗑️ Eliminar</button>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    ${replyHtml}
                     <div class="msg-text-container">
                         <span class="msg-text-content">${data.text}</span>
                     </div>
                 </div>
             `;
 
-            // Control de menú de 3 puntos
             const dotsBtn = item.querySelector('.menu-dots-btn');
             const menuDropdown = item.querySelector('.dropdown-menu');
+            const replyBtn = item.querySelector('.reply-msg-btn');
             const editBtn = item.querySelector('.edit-msg-btn');
             const delBtn = item.querySelector('.del-msg-btn');
 
             dotsBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // Cerrar otros abiertos
                 document.querySelectorAll('.dropdown-menu').forEach(m => {
                     if (m !== menuDropdown) m.classList.remove('show');
                 });
                 menuDropdown.classList.toggle('show');
+            });
+
+            // Opción Responder
+            replyBtn.addEventListener('click', () => {
+                menuDropdown.classList.remove('show');
+                replyingTo = { user: data.user, text: data.text };
+                replyPreviewUser.textContent = `Respondiendo a ${data.user}:`;
+                replyPreviewText.textContent = data.text;
+                replyPreviewContainer.style.display = 'flex';
+                input.focus();
             });
 
             editBtn.addEventListener('click', () => {
@@ -996,14 +1141,11 @@
             messages.scrollTop = messages.scrollHeight;
         });
 
-        // Animación de desvanecimiento para todos los clientes
         socket.on('message deleted', (msgId) => {
             const targetItem = document.getElementById(msgId);
             if (targetItem) {
                 targetItem.classList.add('dissolving');
-                setTimeout(() => {
-                    targetItem.remove();
-                }, 500);
+                setTimeout(() => { targetItem.remove(); }, 500);
             }
         });
 
@@ -1018,19 +1160,6 @@
                 targetItem.classList.add('edited-anim');
             }
         });
-
-        function refreshMessageActions() {
-            document.querySelectorAll('#messages li').forEach(li => {
-                const senderId = li.dataset.senderId;
-                const isMe = (senderId === socket.id);
-                const menuContainer = li.querySelector('.msg-menu-container');
-                if (menuContainer) {
-                    if (isMe || isAdmin) {
-                        menuContainer.style.display = 'inline-block';
-                    }
-                }
-            });
-        }
 
         socket.on('system-message', (msg) => {
             const item = document.createElement('li');
@@ -1059,7 +1188,15 @@
                 leftDiv.className = 'user-left';
 
                 const dotClass = uData.isFirst ? 'status-dot first-user' : 'status-dot';
-                leftDiv.innerHTML = `<span class="${dotClass}"></span><span style="color: ${uData.color}; font-weight: bold;">${uData.nickname}</span>`;
+                
+                // Generar inicial para el avatar
+                const initial = uData.nickname ? uData.nickname.charAt(0).toUpperCase() : '?';
+
+                leftDiv.innerHTML = `
+                    <div class="user-avatar" style="background-color: ${uData.color}">${initial}</div>
+                    <span class="${dotClass}"></span>
+                    <span style="color: ${uData.color}; font-weight: bold;">${uData.nickname}</span>
+                `;
                 li.appendChild(leftDiv);
 
                 const actionsDiv = document.createElement('div');
