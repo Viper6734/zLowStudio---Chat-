@@ -16,8 +16,8 @@ const AVAILABLE_COLORS = [
 ];
 
 let colorIndex = 0;
-const users = {}; 
-const typingUsers = new Set(); // Mantiene la lista de socket.id de los usuarios escribiendo
+const users = {}; // { socketId: { nickname, color, isFirst, status } }
+const typingUsers = new Set();
 let messageIdCounter = 0;
 
 function getUniqueColor() {
@@ -36,11 +36,19 @@ io.on('connection', (socket) => {
         users[socket.id] = {
             nickname: socket.nickname,
             color: socket.userColor,
-            isFirst: isFirst
+            isFirst: isFirst,
+            status: 'online'
         };
 
         io.emit('system-message', `${socket.nickname} ha entrado al chat.`);
         io.emit('update-users', users);
+    });
+
+    socket.on('change status', (status) => {
+        if (users[socket.id]) {
+            users[socket.id].status = status;
+            io.emit('update-users', users);
+        }
     });
 
     socket.on('chat message', (data) => {
@@ -48,7 +56,6 @@ io.on('connection', (socket) => {
             messageIdCounter++;
             const msgId = 'msg_' + messageIdCounter + '_' + Date.now();
             
-            // Si envía mensaje, deja de escribir
             typingUsers.delete(socket.id);
             broadcastTypingStatus();
 
@@ -64,7 +71,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Gestión de estado de escritura de múltiples usuarios
     socket.on('typing', (isTyping) => {
         if (users[socket.id]) {
             if (isTyping) {
