@@ -127,6 +127,14 @@ const AVAILABLE_COLORS = [
 let colorIndex = 0;
 const users = {}; 
 const typingUsers = new Set();
+const recordingUsers = new Set();
+
+function broadcastRecordingStatus() {
+    const names = Array.from(recordingUsers)
+        .map(id => users[id] ? users[id].nickname : null)
+        .filter(Boolean);
+    io.emit('recording update', names);
+}
 let messageIdCounter = 0;
 const messagesStore = {};
 
@@ -172,6 +180,7 @@ io.on('connection', (socket) => {
             
             typingUsers.delete(socket.id);
             broadcastTypingStatus();
+            if (recordingUsers.delete(socket.id)) broadcastRecordingStatus();
 
             let image = data.image || null;
             if (typeof image !== 'string' || !(image.startsWith('data:image/') || /^https:\/\//i.test(image))) {
@@ -265,6 +274,13 @@ io.on('connection', (socket) => {
         io.emit('typing update', names);
     }
 
+    socket.on('recording', (isRecording) => {
+        if (!users[socket.id]) return;
+        if (isRecording) recordingUsers.add(socket.id);
+        else recordingUsers.delete(socket.id);
+        broadcastRecordingStatus();
+    });
+
     socket.on('delete message', (msgId) => {
         delete messagesStore[msgId];
         io.emit('message deleted', msgId);
@@ -308,8 +324,10 @@ io.on('connection', (socket) => {
             const name = users[socket.id].nickname;
             typingUsers.delete(socket.id);
             broadcastTypingStatus();
+            recordingUsers.delete(socket.id);
 
             delete users[socket.id];
+            broadcastRecordingStatus();
             io.emit('system-message', `${name} ha salido del chat.`);
             io.emit('update-users', users);
         }
