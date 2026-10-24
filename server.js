@@ -17,6 +17,7 @@ const AVAILABLE_COLORS = [
 
 let colorIndex = 0;
 const users = {}; 
+const typingUsers = new Set(); // Mantiene la lista de socket.id de los usuarios escribiendo
 let messageIdCounter = 0;
 
 function getUniqueColor() {
@@ -46,6 +47,11 @@ io.on('connection', (socket) => {
         if (users[socket.id]) {
             messageIdCounter++;
             const msgId = 'msg_' + messageIdCounter + '_' + Date.now();
+            
+            // Si envía mensaje, deja de escribir
+            typingUsers.delete(socket.id);
+            broadcastTypingStatus();
+
             io.emit('chat message', {
                 id: msgId,
                 senderId: socket.id,
@@ -58,14 +64,25 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Gestión de estado de escritura de múltiples usuarios
     socket.on('typing', (isTyping) => {
         if (users[socket.id]) {
-            socket.broadcast.emit('user typing', {
-                user: users[socket.id].nickname,
-                isTyping: isTyping
-            });
+            if (isTyping) {
+                typingUsers.add(socket.id);
+            } else {
+                typingUsers.delete(socket.id);
+            }
+            broadcastTypingStatus();
         }
     });
+
+    function broadcastTypingStatus() {
+        const names = Array.from(typingUsers)
+            .map(id => users[id] ? users[id].nickname : null)
+            .filter(Boolean);
+
+        io.emit('typing update', names);
+    }
 
     socket.on('delete message', (msgId) => {
         io.emit('message deleted', msgId);
@@ -104,6 +121,9 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         if (users[socket.id]) {
             const name = users[socket.id].nickname;
+            typingUsers.delete(socket.id);
+            broadcastTypingStatus();
+
             delete users[socket.id];
             io.emit('system-message', `${name} ha salido del chat.`);
             io.emit('update-users', users);
