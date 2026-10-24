@@ -493,6 +493,18 @@
             margin-bottom: 2px;
         }
 
+        /* Imagen integrada en el mensaje */
+        .msg-image {
+            max-width: 240px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 6px;
+            display: block;
+            cursor: pointer;
+            object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
         #reply-preview-container {
             display: none;
             background: var(--bg-input);
@@ -580,7 +592,6 @@
 
         .msg-text { font-size: 0.95rem; line-height: 1.4; }
 
-        /* Estilo para las menciones resaltadas */
         .mention-tag {
             font-weight: 700;
             padding: 1px 5px;
@@ -635,9 +646,32 @@
             gap: 10px;
             margin-top: 5px;
             position: relative;
+            align-items: center;
         }
 
-        .chat-form input {
+        /* Botón de signo de más (+) para adjuntar imagen */
+        .attach-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .attach-btn:hover {
+            border-color: var(--accent-blue);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .chat-form input[type="text"] {
             flex: 1;
             padding: 12px;
             border-radius: 8px;
@@ -647,7 +681,7 @@
             outline: none;
         }
 
-        .chat-form button {
+        .chat-form button.main-btn {
             padding: 12px 24px;
             border: none;
             border-radius: 8px;
@@ -657,7 +691,6 @@
             cursor: pointer;
         }
 
-        /* Lista de Autocompletado de Menciones @ */
         .mentions-autocomplete {
             display: none;
             position: absolute;
@@ -923,7 +956,6 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <!-- Botón para Abrir/Cerrar la Lista siempre visible junto a Settings -->
                     <button class="action-icon-btn" id="toggle-sidebar-btn" title="Mostrar/Ocultar Conectados">👥</button>
                     <button class="action-icon-btn" id="open-settings-btn" title="Settings">⚙️</button>
                 </div>
@@ -944,10 +976,16 @@
                 <button id="cancel-reply-btn" title="Cancelar respuesta">&times;</button>
             </div>
 
+            <!-- Formulario con botón de Cargar Imagen (+) -->
             <form id="form" class="chat-form">
-                <!-- Autocompletado flotante de menciones -->
                 <div class="mentions-autocomplete" id="mentions-popup"></div>
                 
+                <!-- Input de archivo oculto para la imagen -->
+                <input type="file" id="image-file-input" accept="image/png, image/jpeg" style="display: none;" />
+                
+                <!-- Botón de signo de más (+) en la esquina izquierda -->
+                <button type="button" class="attach-btn" id="attach-btn" title="Cargar imagen">+</button>
+
                 <input id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ para mencionar)" />
                 <button class="main-btn" id="btn-send" style="width: auto;">Enviar</button>
             </form>
@@ -1015,6 +1053,9 @@
         const usersList = document.getElementById('users-list');
         const userCount = document.getElementById('user-count');
         const mentionsPopup = document.getElementById('mentions-popup');
+        
+        const attachBtn = document.getElementById('attach-btn');
+        const imageFileInput = document.getElementById('image-file-input');
 
         let myNickname = '';
         let isAdmin = false;
@@ -1153,7 +1194,6 @@
         openSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
         closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'none');
 
-        // Botón superior para alternar lista
         toggleSidebarBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
             const isCollapsed = sidebar.classList.contains('collapsed');
@@ -1183,7 +1223,7 @@
                 document.getElementById('st-label-sound').textContent = 'Notification Sound';
                 document.getElementById('close-settings-btn').textContent = 'Save & Close';
                 document.getElementById('btn-send').textContent = 'Send';
-                input.placeholder = 'Type a message...';
+                input.placeholder = 'Type a message... (Use @ to mention)';
                 document.getElementById('join-title').textContent = 'Join Chat';
                 joinBtn.textContent = 'Enter';
             } else {
@@ -1214,7 +1254,43 @@
             playMessageSound();
         }));
 
-        // Lógica de detección de menciones @ en el Input
+        // Botón de (+) para abrir selector de archivos de imagen
+        attachBtn.addEventListener('click', () => {
+            imageFileInput.click();
+        });
+
+        // Al seleccionar imagen, convertir a Base64 y enviarla inmediatamente
+        imageFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('Por favor selecciona un archivo de imagen válido (PNG o JPEG).');
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const base64Image = event.target.result;
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    socket.emit('chat message', {
+                        text: input.value.trim(),
+                        image: base64Image,
+                        time: timeStr,
+                        replyTo: replyingTo
+                    });
+
+                    input.value = '';
+                    imageFileInput.value = '';
+                    replyingTo = null;
+                    replyPreviewContainer.style.display = 'none';
+                    socket.emit('typing', false);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
         input.addEventListener('input', () => {
             socket.emit('typing', true);
             clearTimeout(typingTimeout);
@@ -1347,6 +1423,7 @@
                 
                 socket.emit('chat message', {
                     text: input.value,
+                    image: null,
                     time: timeStr,
                     replyTo: replyingTo
                 });
@@ -1370,8 +1447,8 @@
             }
         });
 
-        // Formatea el texto reemplazando menciones @Usuario por etiquetas de color
         function formatMentions(text) {
+            if (!text) return '';
             let formattedText = text;
             Object.values(currentUsersData).forEach(u => {
                 const mentionRegex = new RegExp(`@${u.nickname}\\b`, 'gi');
@@ -1406,6 +1483,12 @@
             }
 
             const formattedMessageText = formatMentions(data.text);
+            
+            // Renderizado de imagen si existe
+            let imageHtml = '';
+            if (data.image) {
+                imageHtml = `<img src="${data.image}" class="msg-image" alt="Imagen enviada" onclick="window.open(this.src)" />`;
+            }
 
             item.innerHTML = `
                 <div class="user-avatar" style="background-color: ${data.color}">${initial}</div>
@@ -1428,7 +1511,8 @@
                     </div>
                     ${replyHtml}
                     <div class="msg-text-container">
-                        <span class="msg-text-content">${formattedMessageText}</span>
+                        ${formattedMessageText ? `<span class="msg-text-content">${formattedMessageText}</span>` : ''}
+                        ${imageHtml}
                     </div>
                 </div>
             `;
@@ -1449,10 +1533,10 @@
 
             replyBtn.addEventListener('click', () => {
                 menuDropdown.classList.remove('show');
-                replyingTo = { user: data.user, text: data.text, color: data.color };
+                replyingTo = { user: data.user, text: data.text || '[Imagen]', color: data.color };
                 replyPreviewUser.textContent = `Respondiendo a ${data.user}:`;
                 replyPreviewUser.style.color = data.color;
-                replyPreviewText.textContent = data.text;
+                replyPreviewText.textContent = data.text || '[Imagen]';
                 replyPreviewContainer.style.display = 'flex';
                 input.focus();
             });
@@ -1461,7 +1545,8 @@
                 editBtn.addEventListener('click', () => {
                     menuDropdown.classList.remove('show');
                     selectedMsgId = data.id;
-                    const currentText = item.querySelector('.msg-text-content').innerText;
+                    const textContentEl = item.querySelector('.msg-text-content');
+                    const currentText = textContentEl ? textContentEl.innerText : '';
                     editMsgInput.value = currentText;
                     editMsgModal.style.display = 'flex';
                 });
@@ -1496,7 +1581,16 @@
             if (targetItem) {
                 const textContainer = targetItem.querySelector('.msg-text-container');
                 const formattedNewText = formatMentions(newText);
-                textContainer.innerHTML = `<span class="msg-text-content">${formattedNewText}</span><span class="edited-tag">(editado)</span>`;
+                
+                // Mantener la imagen si existía en el mensaje original
+                const existingImage = targetItem.querySelector('.msg-image');
+                const imageHtml = existingImage ? existingImage.outerHTML : '';
+
+                textContainer.innerHTML = `
+                    ${formattedNewText ? `<span class="msg-text-content">${formattedNewText}</span>` : ''}
+                    ${imageHtml}
+                    <span class="edited-tag">(editado)</span>
+                `;
                 
                 targetItem.classList.remove('edited-anim');
                 void targetItem.offsetWidth;
