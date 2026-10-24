@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    maxHttpBufferSize: 5e6 // 5 MB para imágenes
+    maxHttpBufferSize: 10e6 // 10 MB para soportar imágenes y avatares
 });
 
 app.use(express.static('public'));
@@ -30,14 +30,19 @@ function getUniqueColor() {
 }
 
 io.on('connection', (socket) => {
-    socket.on('join', (nickname) => {
-        socket.nickname = nickname || 'Anónimo';
+    socket.on('join', (userData) => {
+        // Recibe { nickname, avatar }
+        const nickname = (userData && userData.nickname) ? userData.nickname.trim() : 'Anónimo';
+        const avatar = (userData && userData.avatar) ? userData.avatar : null;
+
+        socket.nickname = nickname;
         
         const isFirst = Object.keys(users).length === 0;
         socket.userColor = isFirst ? '#ffcc00' : getUniqueColor();
 
         users[socket.id] = {
             nickname: socket.nickname,
+            avatar: avatar,
             color: socket.userColor,
             isFirst: isFirst,
             status: 'online'
@@ -66,6 +71,7 @@ io.on('connection', (socket) => {
                 id: msgId,
                 senderId: socket.id,
                 user: users[socket.id].nickname,
+                avatar: users[socket.id].avatar,
                 color: users[socket.id].color,
                 text: data.text || '',
                 image: data.image || null,
@@ -107,6 +113,7 @@ io.on('connection', (socket) => {
                 msg.reactions[emoji].push({
                     id: socket.id,
                     nickname: user.nickname,
+                    avatar: user.avatar,
                     color: user.color
                 });
             }
