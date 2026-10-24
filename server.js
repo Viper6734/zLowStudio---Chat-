@@ -17,7 +17,7 @@ app.use(express.static('public'));
 //   GIF_API_KEY=tu_clave
 //   GIF_PROVIDER=klipy   (o "giphy")
 // ============================================================
-const GIF_API_KEY = process.env.GIF_API_KEY || '';
+const GIF_API_KEY = process.env.GIF_API_KEY || 'EqKveKya673SGDNK1vWqZlqCeczfAYPbRC3KDD9WDW8cVMQKPG6wTnMWcEoqOglk';
 const GIF_PROVIDER = (process.env.GIF_PROVIDER || 'klipy').toLowerCase();
 const GIF_PAGE_SIZE = 24;
 const GIF_CACHE_TTL = 5 * 60 * 1000;
