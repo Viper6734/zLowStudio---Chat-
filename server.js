@@ -8,7 +8,6 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-// Paleta de colores variados (excluyendo el amarillo reservado para el primero)
 const AVAILABLE_COLORS = [
     '#ff4757', '#2ed573', '#1e90ff', '#ffa502', '#eccc68',
     '#ff6b81', '#70a1ff', '#7bed9f', '#ff7f50', '#a29bfe',
@@ -17,7 +16,7 @@ const AVAILABLE_COLORS = [
 ];
 
 let colorIndex = 0;
-const users = {}; // { socketId: { nickname, color, isFirst } }
+const users = {}; 
 
 function getUniqueColor() {
     const color = AVAILABLE_COLORS[colorIndex % AVAILABLE_COLORS.length];
@@ -29,7 +28,6 @@ io.on('connection', (socket) => {
     socket.on('join', (nickname) => {
         socket.nickname = nickname || 'Anónimo';
         
-        // Verificar si es el primer usuario conectado
         const isFirst = Object.keys(users).length === 0;
         socket.userColor = isFirst ? '#ffcc00' : getUniqueColor();
 
