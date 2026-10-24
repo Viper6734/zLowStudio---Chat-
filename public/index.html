@@ -14,6 +14,7 @@
             --bg-modal: #141418;
             --bg-input: #181820;
             --border-color: #1f1f26;
+            --glow-color: rgba(0, 123, 255, 0.4);
             --text-main: #ffffff;
             --text-sub: #aaaaaa;
             --accent-blue: #007bff;
@@ -27,6 +28,7 @@
             --bg-modal: #1c103f;
             --bg-input: #261654;
             --border-color: #ff0055;
+            --glow-color: rgba(255, 0, 85, 0.6);
             --text-main: #00f6ff;
             --text-sub: #ff77a9;
             --accent-blue: #ff0055;
@@ -39,6 +41,7 @@
             --bg-modal: #13224f;
             --bg-input: #1c2d5a;
             --border-color: #1c3166;
+            --glow-color: rgba(2, 132, 199, 0.5);
             --text-main: #e0f2fe;
             --text-sub: #7dd3fc;
             --accent-blue: #0284c7;
@@ -51,6 +54,7 @@
             --bg-modal: #ffffff;
             --bg-input: #f1f5f9;
             --border-color: #e2e8f0;
+            --glow-color: rgba(37, 99, 235, 0.3);
             --text-main: #0f172a;
             --text-sub: #64748b;
             --accent-blue: #2563eb;
@@ -202,17 +206,33 @@
             cursor: pointer;
         }
 
+        /* Animación de palpitación persistente en los bordes y esquinas */
+        @keyframes borderPulseGlow {
+            0% {
+                box-shadow: 0 0 10px var(--border-color), inset 0 0 5px var(--border-color), 0 0 20px var(--glow-color);
+                border-color: var(--border-color);
+            }
+            50% {
+                box-shadow: 0 0 25px var(--glow-color), inset 0 0 12px var(--glow-color), 0 0 35px var(--glow-color);
+                border-color: var(--accent-blue);
+            }
+            100% {
+                box-shadow: 0 0 10px var(--border-color), inset 0 0 5px var(--border-color), 0 0 20px var(--glow-color);
+                border-color: var(--border-color);
+            }
+        }
+
         .chat-container {
             display: flex;
             width: 100%;
             max-width: 1000px;
             height: 82vh;
             background: var(--bg-container);
-            border-radius: 14px;
-            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            border: 2px solid var(--border-color);
             overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
             position: relative;
+            animation: borderPulseGlow 4s infinite ease-in-out;
         }
 
         .chat-main {
@@ -239,7 +259,6 @@
             font-size: 1.15rem;
         }
 
-        /* Dropdown selector de Estado estilo Discord */
         .status-dropdown-container {
             position: relative;
             display: inline-block;
@@ -294,7 +313,6 @@
         }
         .status-item:hover { background: rgba(255,255,255,0.08); }
 
-        /* Iconos de Estado Estilo Discord */
         .status-icon {
             width: 12px;
             height: 12px;
@@ -304,13 +322,11 @@
             position: relative;
         }
 
-        /* 🟢 Online */
         .status-icon.online {
             background-color: #28a745;
             box-shadow: 0 0 6px #28a745;
         }
 
-        /* 🔴 No Molestar (Discord Line) */
         .status-icon.dnd {
             background-color: #dc3545;
             box-shadow: 0 0 6px #dc3545;
@@ -326,14 +342,11 @@
             border-radius: 1px;
         }
 
-        /* 🌙 Ausente (Discord Moon) */
         .status-icon.idle {
             background-color: #ffcc00;
             box-shadow: 0 0 6px #ffcc00;
-            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
         }
 
-        /* ⚪ Invisible / Desconectado */
         .status-icon.offline {
             background-color: #6c757d;
             border: 2px solid #111115;
@@ -346,7 +359,7 @@
             gap: 8px;
         }
 
-        .settings-btn, .toggle-sidebar-btn {
+        .settings-btn {
             background: transparent;
             border: none;
             font-size: 1.2rem;
@@ -355,7 +368,7 @@
             padding: 4px 8px;
             border-radius: 6px;
         }
-        .settings-btn:hover, .toggle-sidebar-btn:hover {
+        .settings-btn:hover {
             color: var(--text-main);
             background: var(--bg-input);
         }
@@ -661,14 +674,35 @@
             border-left: none !important;
         }
 
+        /* Cabecera del sidebar con el botón colapsable integrado entre las líneas */
+        .sidebar-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
         .users-sidebar h3 {
             font-size: 0.9rem;
-            margin-bottom: 15px;
             color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 1px;
             white-space: nowrap;
+            margin: 0;
         }
+
+        .toggle-sidebar-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            font-size: 0.8rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .toggle-sidebar-btn:hover { background: var(--accent-blue); border-color: var(--accent-blue); }
 
         #users-list {
             list-style: none;
@@ -860,7 +894,6 @@
                     </div>
                 </div>
                 <div class="header-actions">
-                    <button class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Minimizar Lista">▶</button>
                     <button class="settings-btn" id="open-settings-btn" title="Settings">⚙️</button>
                 </div>
             </div>
@@ -886,8 +919,12 @@
             </form>
         </div>
 
+        <!-- Panel Lateral con Botón Desplazable Entre las Líneas de Conectados -->
         <div class="users-sidebar" id="sidebar">
-            <h3 id="txt-sidebar-title">Conectados (<span id="user-count">0</span>)</h3>
+            <div class="sidebar-header-row">
+                <h3 id="txt-sidebar-title">Conectados (<span id="user-count">0</span>)</h3>
+                <button class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Ocultar Lista">◀</button>
+            </div>
             <ul id="users-list"></ul>
         </div>
     </div>
@@ -1032,11 +1069,10 @@
             const isCollapsed = localStorage.getItem('chat_sidebar_collapsed') === 'true';
             if (isCollapsed) {
                 sidebar.classList.add('collapsed');
-                toggleSidebarBtn.textContent = '◀';
+                toggleSidebarBtn.textContent = '▶';
             }
         }
 
-        // Dropdown de Estado Estilo Discord
         currentStatusBadge.addEventListener('click', (e) => {
             e.stopPropagation();
             playMenuSound();
@@ -1088,7 +1124,7 @@
         toggleSidebarBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
             const isCollapsed = sidebar.classList.contains('collapsed');
-            toggleSidebarBtn.textContent = isCollapsed ? '◀' : '▶';
+            toggleSidebarBtn.textContent = isCollapsed ? '▶' : '◀';
             saveSettings('sidebar_collapsed', isCollapsed);
         });
 
@@ -1380,7 +1416,6 @@
             usersList.innerHTML = '';
             let entries = Object.entries(usersObj);
 
-            // Filtrar usuarios con estado 'offline' (Invisible / Desconectado)
             const visibleEntries = entries.filter(([id, uData]) => uData.status !== 'offline');
             userCount.textContent = visibleEntries.length;
 
