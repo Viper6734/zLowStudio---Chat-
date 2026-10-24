@@ -465,11 +465,6 @@
             max-width: 100%;
         }
 
-        /* Estilo limpio para cuando hay una imagen en la burbuja */
-        .msg-bubble.has-image {
-            padding: 10px;
-        }
-
         .sent-msg .msg-bubble { border-bottom-right-radius: 2px; }
         .received-msg .msg-bubble { border-bottom-left-radius: 2px; }
 
@@ -498,17 +493,16 @@
             margin-bottom: 2px;
         }
 
-        /* Imagen en el chat con bordes finos y limpios */
+        /* Imagen integrada en el mensaje */
         .msg-image {
-            max-width: 280px;
-            max-height: 260px;
+            max-width: 240px;
+            max-height: 200px;
             border-radius: 8px;
             margin-top: 6px;
             display: block;
             cursor: pointer;
             object-fit: cover;
-            border: none;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255,255,255,0.2);
         }
 
         #reply-preview-container {
@@ -647,64 +641,54 @@
         .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
         .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
 
-        /* Contenedor Unificado Grande de la Barra de Entrada */
         .chat-form {
             display: flex;
-            gap: 0;
+            gap: 10px;
             margin-top: 5px;
             position: relative;
             align-items: center;
+        }
+
+        /* Botón de signo de más (+) para adjuntar imagen */
+        .attach-btn {
             background: var(--bg-input);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 4px;
-            transition: border-color 0.2s;
-        }
-
-        .chat-form:focus-within {
-            border-color: var(--accent-blue);
-        }
-
-        /* Botón '+' pegado a la barra */
-        .attach-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-sub);
-            width: 38px;
-            height: 38px;
+            color: var(--text-main);
+            width: 42px;
+            height: 42px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: bold;
             cursor: pointer;
             flex-shrink: 0;
-            transition: color 0.2s;
-            outline: none;
+            transition: all 0.2s;
         }
         .attach-btn:hover {
-            color: var(--text-main);
+            border-color: var(--accent-blue);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .chat-form input[type="text"] {
             flex: 1;
-            padding: 10px 12px;
-            border: none;
-            background: transparent;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-input);
             color: var(--text-main);
             outline: none;
-            font-size: 0.95rem;
         }
 
         .chat-form button.main-btn {
-            padding: 10px 20px;
+            padding: 12px 24px;
             border: none;
             border-radius: 8px;
             background: var(--accent-blue);
             color: white;
             font-weight: bold;
             cursor: pointer;
-            margin-left: 6px;
         }
 
         .mentions-autocomplete {
@@ -992,15 +976,18 @@
                 <button id="cancel-reply-btn" title="Cancelar respuesta">&times;</button>
             </div>
 
-            <!-- Formulario Grande Unificado con Botón '+' a la izquierda -->
+            <!-- Formulario con botón de Cargar Imagen (+) -->
             <form id="form" class="chat-form">
                 <div class="mentions-autocomplete" id="mentions-popup"></div>
                 
+                <!-- Input de archivo oculto para la imagen -->
                 <input type="file" id="image-file-input" accept="image/png, image/jpeg" style="display: none;" />
-                <button type="button" class="attach-btn" id="attach-btn" title="Cargar o pegar imagen">+</button>
+                
+                <!-- Botón de signo de más (+) en la esquina izquierda -->
+                <button type="button" class="attach-btn" id="attach-btn" title="Cargar imagen">+</button>
 
-                <input type="text" id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ o pega una imagen)" />
-                <button class="main-btn" id="btn-send">Enviar</button>
+                <input id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ para mencionar)" />
+                <button class="main-btn" id="btn-send" style="width: auto;">Enviar</button>
             </form>
         </div>
 
@@ -1236,7 +1223,7 @@
                 document.getElementById('st-label-sound').textContent = 'Notification Sound';
                 document.getElementById('close-settings-btn').textContent = 'Save & Close';
                 document.getElementById('btn-send').textContent = 'Send';
-                input.placeholder = 'Type a message... (Use @ or paste image)';
+                input.placeholder = 'Type a message... (Use @ to mention)';
                 document.getElementById('join-title').textContent = 'Join Chat';
                 joinBtn.textContent = 'Enter';
             } else {
@@ -1246,7 +1233,7 @@
                 document.getElementById('st-label-sound').textContent = 'Sonido de Notificación';
                 document.getElementById('close-settings-btn').textContent = 'Guardar y Cerrar';
                 document.getElementById('btn-send').textContent = 'Enviar';
-                input.placeholder = 'Escribe un mensaje... (Usa @ o pega una imagen)';
+                input.placeholder = 'Escribe un mensaje... (Usa @ para mencionar)';
                 document.getElementById('join-title').textContent = 'Ingresa al Chat';
                 joinBtn.textContent = 'Entrar';
             }
@@ -1267,50 +1254,40 @@
             playMessageSound();
         }));
 
+        // Botón de (+) para abrir selector de archivos de imagen
         attachBtn.addEventListener('click', () => {
             imageFileInput.click();
         });
 
-        // Función para enviar archivos de imagen
-        function sendImageFile(file) {
-            if (!file || !file.type.startsWith('image/')) return;
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const base64Image = event.target.result;
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                socket.emit('chat message', {
-                    text: input.value.trim(),
-                    image: base64Image,
-                    time: timeStr,
-                    replyTo: replyingTo
-                });
-
-                input.value = '';
-                imageFileInput.value = '';
-                replyingTo = null;
-                replyPreviewContainer.style.display = 'none';
-                socket.emit('typing', false);
-            };
-            reader.readAsDataURL(file);
-        }
-
+        // Al seleccionar imagen, convertir a Base64 y enviarla inmediatamente
         imageFileInput.addEventListener('change', (e) => {
-            sendImageFile(e.target.files[0]);
-        });
-
-        // Soporte para pegar imágenes directamente con Ctrl+V
-        input.addEventListener('paste', (e) => {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (let item of items) {
-                if (item.type.indexOf('image') === 0) {
-                    const blob = item.getAsFile();
-                    sendImageFile(blob);
-                    e.preventDefault();
-                    break;
+            const file = e.target.files[0];
+            if (file) {
+                if (!file.type.startsWith('image/')) {
+                    alert('Por favor selecciona un archivo de imagen válido (PNG o JPEG).');
+                    return;
                 }
+
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const base64Image = event.target.result;
+                    const now = new Date();
+                    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    socket.emit('chat message', {
+                        text: input.value.trim(),
+                        image: base64Image,
+                        time: timeStr,
+                        replyTo: replyingTo
+                    });
+
+                    input.value = '';
+                    imageFileInput.value = '';
+                    replyingTo = null;
+                    replyPreviewContainer.style.display = 'none';
+                    socket.emit('typing', false);
+                };
+                reader.readAsDataURL(file);
             }
         });
 
@@ -1507,6 +1484,7 @@
 
             const formattedMessageText = formatMentions(data.text);
             
+            // Renderizado de imagen si existe
             let imageHtml = '';
             if (data.image) {
                 imageHtml = `<img src="${data.image}" class="msg-image" alt="Imagen enviada" onclick="window.open(this.src)" />`;
@@ -1514,7 +1492,7 @@
 
             item.innerHTML = `
                 <div class="user-avatar" style="background-color: ${data.color}">${initial}</div>
-                <div class="msg-bubble ${data.image ? 'has-image' : ''}" style="background-color: ${data.color}">
+                <div class="msg-bubble" style="background-color: ${data.color}">
                     <div class="msg-info">
                         <span><strong>${data.user}</strong></span>
                         <div style="display: flex; align-items: center; gap: 5px;">
@@ -1604,6 +1582,7 @@
                 const textContainer = targetItem.querySelector('.msg-text-container');
                 const formattedNewText = formatMentions(newText);
                 
+                // Mantener la imagen si existía en el mensaje original
                 const existingImage = targetItem.querySelector('.msg-image');
                 const imageHtml = existingImage ? existingImage.outerHTML : '';
 
