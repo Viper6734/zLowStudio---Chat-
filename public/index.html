@@ -1237,6 +1237,126 @@
         }
         .emoji-item:hover { background: var(--hover-bg); }
 
+        /* --- INDICADOR "GRABANDO AUDIO" (adaptado al tema) --- */
+        #recording-indicator {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            height: 20px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-style: italic;
+        }
+        .rec-ind-mic {
+            width: 14px;
+            height: 14px;
+            fill: var(--accent-blue);
+            flex-shrink: 0;
+            animation: recBlink 1.1s infinite ease-in-out;
+        }
+        .rec-ind-bars { display: flex; align-items: center; gap: 2px; height: 14px; }
+        .rec-ind-bars i {
+            display: block;
+            width: 3px;
+            height: 100%;
+            border-radius: 2px;
+            background: var(--accent-blue);
+            transform-origin: center;
+            animation: recEq 0.9s infinite ease-in-out;
+        }
+        .rec-ind-bars i:nth-child(1) { animation-delay: -0.8s; }
+        .rec-ind-bars i:nth-child(2) { animation-delay: -0.6s; }
+        .rec-ind-bars i:nth-child(3) { animation-delay: -0.4s; }
+        .rec-ind-bars i:nth-child(4) { animation-delay: -0.2s; }
+        .rec-ind-bars i:nth-child(5) { animation-delay: 0s; }
+        @keyframes recEq {
+            0%, 100% { transform: scaleY(0.25); }
+            50% { transform: scaleY(1); }
+        }
+
+        /* --- ACCIONES AL LADO DEL MENSAJE (reaccionar / opciones) --- */
+        .msg-actions {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity 0.12s ease, visibility 0.12s;
+            z-index: 60;
+        }
+        .sent-msg .msg-actions { right: 100%; padding-right: 8px; }
+        .received-msg .msg-actions { left: 100%; padding-left: 8px; }
+
+        #messages li:hover .msg-actions,
+        #messages li.actions-open .msg-actions,
+        .msg-actions:has(.dropdown-menu.show) {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        /* Si no cabe al costado, se coloca justo encima de la burbuja */
+        .msg-actions.flip-top { top: auto; bottom: 100%; transform: none; padding: 0 0 4px 0; }
+        .sent-msg .msg-actions.flip-top { right: 6px; left: auto; }
+        .received-msg .msg-actions.flip-top { left: 6px; right: auto; }
+
+        .msg-actions-inner {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            padding: 2px;
+            background: var(--bg-modal);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+        .msg-actions .react-quick-btn {
+            font-size: 0.95rem;
+            line-height: 1;
+            padding: 5px 6px;
+            color: var(--text-main);
+        }
+        .msg-actions .react-quick-btn:hover { background: var(--hover-bg); }
+        .msg-actions .react-more-btn { color: var(--text-sub); font-weight: 700; font-size: 1.05rem; }
+        .msg-actions .react-more-btn:hover { color: var(--accent-blue); }
+        .msg-actions .msg-menu-container { margin-left: 0; display: flex; }
+        .msg-actions .menu-dots-btn {
+            color: var(--text-sub);
+            opacity: 1;
+            font-size: 1.05rem;
+            line-height: 1;
+            padding: 5px 7px;
+            border-radius: 6px;
+        }
+        .msg-actions .menu-dots-btn:hover { color: var(--text-main); background: var(--hover-bg); }
+        .msg-actions .dropdown-menu {
+            background: var(--bg-modal);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45), 0 0 14px var(--glow-color);
+        }
+        .msg-actions .dropdown-item { color: var(--text-main); }
+        .msg-actions .dropdown-item:hover { background: var(--hover-bg); }
+        .msg-actions .dropdown-item.delete-opt { color: #ff4757; }
+
+        /* Panel de emojis en modo "reaccionar a un mensaje" */
+        .emoji-reaction-hint {
+            display: none;
+            padding: 7px 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            background: var(--hover-bg);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .emoji-reaction-hint.show { display: block; }
+
         /* --- BARRA DE GRABACIÓN DE AUDIO (adaptada al tema) --- */
         .recording-bar {
             display: none;
@@ -1903,6 +2023,12 @@
                 <div class="typing-dots"><span></span><span></span><span></span></div>
             </div>
 
+            <div id="recording-indicator" style="display: none;">
+                <svg class="rec-ind-mic" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/></svg>
+                <span id="recording-text">Alguien está grabando un audio</span>
+                <div class="rec-ind-bars"><i></i><i></i><i></i><i></i><i></i></div>
+            </div>
+
             <div id="reply-preview-container">
                 <div class="reply-preview-content">
                     <span id="reply-preview-user"></span>
@@ -1954,6 +2080,7 @@
                 <button class="main-btn" id="btn-send">Enviar</button>
 
                 <div class="emoji-picker-popup" id="emoji-picker-popup">
+                    <div class="emoji-reaction-hint" id="emoji-reaction-hint"></div>
                     <div class="emoji-picker-header">
                         <button type="button" class="emoji-tab-btn active" data-tab="faces">😀 Caras</button>
                         <button type="button" class="emoji-tab-btn" data-tab="people">🧑 Personas</button>
@@ -2295,6 +2422,7 @@
                 closeGifPicker();
                 mentionsPopup.classList.remove('show');
                 startMeter(stream);
+                socket.emit('recording', true);
                 triggerHapticFeedback(800, 0.1); // Tono de inicio satisfactorio
             } catch (err) {
                 alert('No se pudo acceder al micrófono.');
@@ -2310,6 +2438,7 @@
             micBtn.title = 'Manejar Audio';
             form.classList.remove('is-recording');
             stopMeter();
+            socket.emit('recording', false);
             mediaRecorder.stop();
         }
 
@@ -2735,9 +2864,40 @@
                 const span = document.createElement('span');
                 span.className = 'emoji-item';
                 span.textContent = emoji;
-                span.addEventListener('click', () => insertEmoji(emoji));
+                span.addEventListener('click', () => handleEmojiPick(emoji));
                 emojiGrid.appendChild(span);
             });
+        }
+
+        // Modo "reaccionar": el panel normal de emojis se usa para reaccionar a un mensaje
+        const emojiReactionHint = document.getElementById('emoji-reaction-hint');
+        let reactionTargetMsgId = null;
+
+        function exitReactionMode() {
+            reactionTargetMsgId = null;
+            emojiReactionHint.classList.remove('show');
+            emojiReactionHint.textContent = '';
+        }
+
+        function openEmojiPanelForReaction(msgId, userName) {
+            closeGifPicker();
+            mentionsPopup.classList.remove('show');
+            reactionTargetMsgId = msgId;
+            emojiReactionHint.textContent = `Reaccionando al mensaje de ${userName}`;
+            emojiReactionHint.classList.add('show');
+            emojiTabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === 'faces'));
+            renderEmojiGrid('faces');
+            emojiPickerPopup.classList.add('show');
+        }
+
+        function handleEmojiPick(emoji) {
+            if (reactionTargetMsgId) {
+                socket.emit('add reaction', { msgId: reactionTargetMsgId, emoji: emoji });
+                exitReactionMode();
+                emojiPickerPopup.classList.remove('show');
+            } else {
+                insertEmoji(emoji);
+            }
         }
 
         function insertEmoji(emoji) {
@@ -2753,6 +2913,7 @@
         emojiToggleBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             closeGifPicker();
+            exitReactionMode();
             emojiPickerPopup.classList.toggle('show');
             if (emojiPickerPopup.classList.contains('show')) {
                 renderEmojiGrid('faces');
@@ -3005,6 +3166,19 @@
             input.focus();
         }
 
+        const recordingIndicator = document.getElementById('recording-indicator');
+        const recordingText = document.getElementById('recording-text');
+
+        socket.on('recording update', (names) => {
+            const others = (names || []).filter(name => name !== myNickname);
+            if (others.length === 0) {
+                recordingIndicator.style.display = 'none';
+            } else {
+                recordingText.textContent = `${others.join(', ')} ${others.length === 1 ? 'está' : 'están'} grabando un audio`;
+                recordingIndicator.style.display = 'flex';
+            }
+        });
+
         socket.on('typing update', (typingNames) => {
             const otherTyping = typingNames.filter(name => name !== myNickname);
             if (otherTyping.length === 0) {
@@ -3092,7 +3266,11 @@
             if (!e.target.closest('.chat-form')) {
                 mentionsPopup.classList.remove('show');
                 emojiPickerPopup.classList.remove('show');
+                exitReactionMode();
                 closeGifPicker();
+            }
+            if (!e.target.closest('#messages li')) {
+                document.querySelectorAll('#messages li.actions-open').forEach(l => l.classList.remove('actions-open'));
             }
             if (!e.target.closest('.message-reactions-bar') && !e.target.closest('.react-quick-btn')) {
                 document.querySelectorAll('.reaction-picker-popup').forEach(p => p.classList.remove('show'));
@@ -3167,19 +3345,25 @@
             item.innerHTML = `
                 ${userAvatarHtml}
                 <div class="msg-content-wrapper">
-                    <div class="message-reactions-bar">
-                        <button class="react-quick-btn" data-emoji="👍" title="Like">👍</button>
-                        <button class="react-quick-btn" data-emoji="👎" title="Dislike">👎</button>
-                        <button class="react-quick-btn" data-emoji="💩" title="Caca">💩</button>
-                        <button class="react-quick-btn react-more-btn" title="Más emojis">+</button>
-                        <div class="reaction-picker-popup"></div>
-                    </div>
-
                     <div class="msg-bubble ${data.image ? 'has-image' : ''}" style="background-color: ${data.color}">
                         <div class="msg-info">
                             <span><strong>${data.user}</strong></span>
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <span>${data.time}</span>
+                            </div>
+                        </div>
+                        ${replyHtml}
+                        <div class="msg-text-container">
+                            ${formattedMessageText ? `<span class="msg-text-content">${formattedMessageText}</span>` : ''}
+                            ${imageHtml}
+                            ${audioHtml}
+                        </div>
+                        <div class="msg-actions">
+                            <div class="msg-actions-inner">
+                                <button class="react-quick-btn" data-emoji="👍" title="Like">👍</button>
+                                <button class="react-quick-btn" data-emoji="👎" title="Dislike">👎</button>
+                                <button class="react-quick-btn" data-emoji="💩" title="Caca">💩</button>
+                                <button class="react-quick-btn react-more-btn" title="Más emojis">+</button>
                                 <div class="msg-menu-container">
                                     <button class="menu-dots-btn" title="Opciones">⋮</button>
                                     <div class="dropdown-menu">
@@ -3191,12 +3375,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        ${replyHtml}
-                        <div class="msg-text-container">
-                            ${formattedMessageText ? `<span class="msg-text-content">${formattedMessageText}</span>` : ''}
-                            ${imageHtml}
-                            ${audioHtml}
                         </div>
                     </div>
 
@@ -3222,27 +3400,36 @@
             });
 
             const moreBtn = item.querySelector('.react-more-btn');
-            const pickerPopup = item.querySelector('.reaction-picker-popup');
-            
+
             moreBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                document.querySelectorAll('.reaction-picker-popup').forEach(p => {
-                    if (p !== pickerPopup) p.classList.remove('show');
-                });
-                pickerPopup.classList.toggle('show');
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+                openEmojiPanelForReaction(data.id, data.user);
+            });
 
-                if (pickerPopup.classList.contains('show') && pickerPopup.children.length === 0) {
-                    const allEmojis = [...EMOJI_DATABASE.faces, ...EMOJI_DATABASE.people];
-                    allEmojis.forEach(emoji => {
-                        const opt = document.createElement('span');
-                        opt.className = 'picker-emoji-opt';
-                        opt.textContent = emoji;
-                        opt.addEventListener('click', () => {
-                            socket.emit('add reaction', { msgId: data.id, emoji: emoji });
-                            pickerPopup.classList.remove('show');
-                        });
-                        pickerPopup.appendChild(opt);
-                    });
+            // Acciones al costado: si no caben, pasan encima de la burbuja
+            function placeMsgActions() {
+                const bubbleEl = item.querySelector('.msg-bubble');
+                const bar = item.querySelector('.msg-actions');
+                if (!bubbleEl || !bar) return;
+                bar.classList.remove('flip-top');
+                const m = messages.getBoundingClientRect();
+                const bb = bubbleEl.getBoundingClientRect();
+                const need = bar.offsetWidth + 10;
+                const overflow = isMe ? (bb.left - need < m.left) : (bb.right + need > m.right);
+                if (overflow) bar.classList.add('flip-top');
+            }
+            item.addEventListener('mouseenter', placeMsgActions);
+
+            // En pantallas táctiles (sin hover) se muestran al tocar el mensaje
+            item.addEventListener('click', (e) => {
+                if (!window.matchMedia('(hover: none)').matches) return;
+                if (e.target.closest('.msg-actions, .reaction-pill, .msg-image, .voice-player')) return;
+                const wasOpen = item.classList.contains('actions-open');
+                document.querySelectorAll('#messages li.actions-open').forEach(l => l.classList.remove('actions-open'));
+                if (!wasOpen) {
+                    placeMsgActions();
+                    item.classList.add('actions-open');
                 }
             });
 
