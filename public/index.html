@@ -261,22 +261,36 @@
             font-weight: 600;
         }
 
+        /* Estado No Molestar para Modo Enfoque */
+        .online-badge.dnd {
+            background: rgba(220, 53, 69, 0.15);
+            border-color: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+        }
+        .online-badge.dnd .status-dot {
+            background-color: #dc3545;
+            box-shadow: 0 0 6px #dc3545;
+        }
+
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
 
-        .settings-btn {
+        .settings-btn, .toggle-sidebar-btn {
             background: transparent;
             border: none;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             cursor: pointer;
             color: var(--text-sub);
-            padding: 4px;
-            border-radius: 50%;
+            padding: 4px 8px;
+            border-radius: 6px;
         }
-        .settings-btn:hover { color: var(--text-main); }
+        .settings-btn:hover, .toggle-sidebar-btn:hover {
+            color: var(--text-main);
+            background: var(--bg-input);
+        }
 
         @keyframes sentBubble {
             0% { opacity: 0; transform: scale(0.2) translateY(30px) rotate(-5deg); }
@@ -323,7 +337,6 @@
             padding-bottom: 10px;
         }
 
-        /* Estructura de fila de mensaje con Avatar al lado */
         #messages li {
             max-width: 85%;
             word-wrap: break-word;
@@ -380,7 +393,6 @@
             gap: 15px;
         }
 
-        /* Cita de Respuesta con Color Dinámico Original */
         .replied-quote {
             background: rgba(0, 0, 0, 0.3);
             border-left: 4px solid #007bff;
@@ -448,7 +460,6 @@
         }
         .menu-dots-btn:hover { opacity: 1; }
 
-        /* Menú desplegable solucionado para que aborde el espacio correcto sin recortarse */
         .dropdown-menu {
             display: none;
             position: absolute;
@@ -551,7 +562,6 @@
             cursor: pointer;
         }
 
-        /* Avatar circular */
         .user-avatar {
             width: 32px;
             height: 32px;
@@ -573,9 +583,16 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .users-sidebar.focus-mode { display: none !important; }
+        /* Estado minimizado / colapsado del panel lateral */
+        .users-sidebar.collapsed {
+            width: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            border-left: none !important;
+        }
 
         .users-sidebar h3 {
             font-size: 0.9rem;
@@ -583,6 +600,7 @@
             color: var(--text-sub);
             text-transform: uppercase;
             letter-spacing: 1px;
+            white-space: nowrap;
         }
 
         #users-list {
@@ -711,7 +729,7 @@
                 </div>
 
                 <div class="setting-card">
-                    <label id="st-label-focus">Modo Enfoque</label>
+                    <label id="st-label-focus">Modo Enfoque (Silenciar + No Molestar)</label>
                     <div class="setting-options">
                         <button class="opt-btn focus-opt" data-val="on">Activado</button>
                         <button class="opt-btn focus-opt active" data-val="off">Desactivado</button>
@@ -768,12 +786,13 @@
             <div class="chat-header">
                 <div class="header-title">
                     <span>Chat online</span>
-                    <span class="online-badge">
+                    <span class="online-badge" id="online-badge">
                         <span class="status-dot"></span>
                         <span id="txt-active">Activo</span>
                     </span>
                 </div>
                 <div class="header-actions">
+                    <button class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Minimizar Lista">▶</button>
                     <button class="settings-btn" id="open-settings-btn" title="Settings">⚙️</button>
                 </div>
             </div>
@@ -817,6 +836,8 @@
         const openSettingsBtn = document.getElementById('open-settings-btn');
         const closeSettingsBtn = document.getElementById('close-settings-btn');
         const sidebar = document.getElementById('sidebar');
+        const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
+        const onlineBadge = document.getElementById('online-badge');
 
         const adminTrigger = document.getElementById('admin-trigger');
         const adminModal = document.getElementById('admin-modal');
@@ -861,6 +882,7 @@
         let replyingTo = null;
         let typingTimeout = null;
         let soundType = 'synth';
+        let isFocusMode = false;
 
         function saveSettings(key, val) {
             localStorage.setItem('chat_' + key, val);
@@ -881,14 +903,21 @@
 
             const focus = localStorage.getItem('chat_focus') || 'off';
             setFocusMode(focus);
+
+            const isCollapsed = localStorage.getItem('chat_sidebar_collapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+                toggleSidebarBtn.textContent = '◀';
+            }
         }
 
-        // Sintetizador de Sonidos Dinámicos
         function playMessageSound() {
+            // Si Modo Enfoque está activo, no reproduce sonidos
+            if (isFocusMode) return;
+
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 if (soundType === 'bubbles') {
-                    // Sonido satisfactorio de Burbujas Pop
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
                     osc.type = 'sine';
@@ -903,7 +932,6 @@
                     osc.start();
                     osc.stop(ctx.currentTime + 0.08);
                 } else {
-                    // Sonido Pop Synth
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
                     osc.type = 'sine';
@@ -939,6 +967,14 @@
         openSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
         closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'none');
 
+        // Toggle Minimizar Sidebar
+        toggleSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            toggleSidebarBtn.textContent = isCollapsed ? '◀' : '▶';
+            saveSettings('sidebar_collapsed', isCollapsed);
+        });
+
         function setTheme(theme) {
             document.body.className = '';
             if (theme !== 'default') document.body.classList.add('theme-' + theme);
@@ -954,8 +990,10 @@
             });
             saveSettings('lang', lang);
 
+            const activeTxt = isFocusMode ? (lang === 'en' ? 'Do Not Disturb' : 'No Molestar') : (lang === 'en' ? 'Active' : 'Activo');
+
             if (lang === 'en') {
-                document.getElementById('txt-active').textContent = 'Active';
+                document.getElementById('txt-active').textContent = activeTxt;
                 document.getElementById('st-title').textContent = '⚙️ Settings';
                 document.getElementById('st-label-theme').textContent = 'Interface Theme';
                 document.getElementById('st-label-lang').textContent = 'Language';
@@ -967,7 +1005,7 @@
                 document.getElementById('join-title').textContent = 'Join Chat';
                 joinBtn.textContent = 'Enter';
             } else {
-                document.getElementById('txt-active').textContent = 'Activo';
+                document.getElementById('txt-active').textContent = activeTxt;
                 document.getElementById('st-title').textContent = '⚙️ Configuración';
                 document.getElementById('st-label-theme').textContent = 'Tema de Interfaz';
                 document.getElementById('st-label-lang').textContent = 'Idioma';
@@ -990,14 +1028,21 @@
         }
 
         function setFocusMode(focus) {
+            isFocusMode = (focus === 'on');
             document.querySelectorAll('.focus-opt').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.val === focus);
             });
-            if (focus === 'on') {
-                sidebar.classList.add('focus-mode');
+
+            const currentLang = localStorage.getItem('chat_lang') || 'es';
+
+            if (isFocusMode) {
+                onlineBadge.classList.add('dnd');
+                document.getElementById('txt-active').textContent = currentLang === 'en' ? 'Do Not Disturb' : 'No Molestar';
             } else {
-                sidebar.classList.remove('focus-mode');
+                onlineBadge.classList.remove('dnd');
+                document.getElementById('txt-active').textContent = currentLang === 'en' ? 'Active' : 'Activo';
             }
+
             saveSettings('focus', focus);
         }
 
@@ -1009,7 +1054,7 @@
         }));
         document.querySelectorAll('.focus-opt').forEach(btn => btn.addEventListener('click', () => setFocusMode(btn.dataset.val)));
 
-        // Typing event
+        // Control de escritura con tiempo de espera
         input.addEventListener('input', () => {
             socket.emit('typing', true);
             clearTimeout(typingTimeout);
@@ -1018,12 +1063,25 @@
             }, 1000);
         });
 
-        socket.on('user typing', (data) => {
-            if (data.isTyping) {
-                typingText.textContent = `${data.user} está escribiendo`;
+        // Actualización inteligente de estado de escritura
+        socket.on('typing update', (typingNames) => {
+            // Filtrar mi propio nombre
+            const otherTyping = typingNames.filter(name => name !== myNickname);
+
+            if (otherTyping.length === 0) {
+                typingIndicator.style.display = 'none';
+            } else if (otherTyping.length === 1) {
+                typingText.textContent = `${otherTyping[0]} está escribiendo`;
+                typingIndicator.style.display = 'flex';
+            } else if (otherTyping.length === 2) {
+                typingText.textContent = `${otherTyping[0]} y ${otherTyping[1]} están escribiendo`;
+                typingIndicator.style.display = 'flex';
+            } else if (otherTyping.length === 3) {
+                typingText.textContent = `${otherTyping[0]}, ${otherTyping[1]} y ${otherTyping[2]} están escribiendo`;
                 typingIndicator.style.display = 'flex';
             } else {
-                typingIndicator.style.display = 'none';
+                typingText.textContent = 'Varias personas están escribiendo';
+                typingIndicator.style.display = 'flex';
             }
         });
 
@@ -1074,7 +1132,6 @@
             e.preventDefault();
             if (input.value.trim()) {
                 const now = new Date();
-                // Formato de hora limpia sin fecha completa
                 const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 
                 socket.emit('chat message', {
@@ -1108,7 +1165,6 @@
             const showOwnerAdminOpts = isMe || isAdmin;
             const initial = data.user ? data.user.charAt(0).toUpperCase() : '?';
 
-            // HTML Cita de mensaje respondido con color del emisor original
             let replyHtml = '';
             if (data.replyTo) {
                 replyHtml = `
@@ -1186,7 +1242,6 @@
                 });
             }
 
-            // Lógica de Autoscroll inteligente
             const isScrolledToBottom = messages.scrollHeight - messages.clientHeight <= messages.scrollTop + 100;
 
             messages.appendChild(item);
