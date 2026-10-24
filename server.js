@@ -57,12 +57,10 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Evento para eliminar un mensaje
     socket.on('delete message', (msgId) => {
         io.emit('message deleted', msgId);
     });
 
-    // Evento para editar un mensaje
     socket.on('edit message', ({ msgId, newText }) => {
         io.emit('message edited', { msgId, newText });
     });
