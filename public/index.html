@@ -1237,6 +1237,208 @@
         }
         .emoji-item:hover { background: var(--hover-bg); }
 
+        /* --- PERFIL DE USUARIO (adaptado al tema) --- */
+        .modal-overlay.profile-overlay { background: rgba(0, 0, 0, 0.62); backdrop-filter: blur(6px); }
+
+        #messages li > .user-avatar,
+        .voice-avatar-img,
+        .user-left .user-avatar {
+            cursor: pointer;
+            transition: box-shadow 0.15s, transform 0.15s;
+        }
+        #messages li > .user-avatar:hover,
+        .voice-avatar-img:hover,
+        .user-left .user-avatar:hover {
+            box-shadow: 0 0 0 2px var(--accent-blue), 0 0 10px var(--glow-color);
+            transform: scale(1.06);
+        }
+        .user-left { cursor: pointer; }
+
+        .self-edit-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-sub);
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            cursor: pointer;
+            outline: none;
+        }
+        .self-edit-btn svg { width: 13px; height: 13px; fill: currentColor; }
+        .self-edit-btn:hover { color: #ffffff; background: var(--accent-blue); border-color: var(--accent-blue); }
+
+        .profile-card {
+            position: relative;
+            width: 340px;
+            max-width: 92vw;
+            max-height: 92vh;
+            overflow-y: auto;
+            background: var(--bg-modal);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            text-align: left;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px var(--glow-color);
+            animation: welcomeCardEntrance 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .profile-banner {
+            height: 96px;
+            background: linear-gradient(135deg, var(--pc, var(--accent-blue)), color-mix(in srgb, var(--pc, var(--accent-blue)) 30%, var(--bg-modal)));
+        }
+        .profile-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.38);
+            color: #ffffff;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .profile-close:hover { background: rgba(0, 0, 0, 0.6); }
+
+        .profile-avatar-wrap {
+            position: absolute;
+            top: 54px;
+            left: 20px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 5px solid var(--bg-modal);
+            background: var(--bg-input);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+        }
+        .profile-avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #000000;
+        }
+        .profile-avatar-wrap .status-icon {
+            position: absolute;
+            right: -2px;
+            bottom: 0;
+            width: 24px;
+            height: 24px;
+            border: 4px solid var(--bg-modal);
+            box-sizing: border-box;
+            box-shadow: none;
+        }
+        .profile-avatar-wrap .status-icon.dnd::after {
+            top: 50%;
+            left: 50%;
+            width: 8px;
+            margin: -1px 0 0 -4px;
+        }
+
+        .profile-body { padding: 58px 20px 18px; }
+        .profile-name-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .profile-name { font-size: 1.4rem; font-weight: 800; line-height: 1.2; word-break: break-word; }
+        .profile-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .profile-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+        .profile-chip.you { background: var(--accent-blue); border-color: var(--accent-blue); color: #ffffff; }
+        .profile-chip .status-icon { width: 10px; height: 10px; }
+
+        .profile-divider { height: 1px; background: var(--border-color); margin: 16px 0 14px; }
+        .profile-section h4 {
+            font-size: 0.68rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-sub);
+            margin-bottom: 4px;
+        }
+        .profile-section p {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            color: var(--text-main);
+            margin: 0;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+        .profile-section p.muted { color: var(--text-sub); font-style: italic; }
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+
+        .profile-actions { display: flex; gap: 8px; margin-top: 18px; }
+        .profile-btn {
+            flex: 1;
+            padding: 10px 8px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-input);
+            color: var(--text-main);
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .profile-btn.primary { background: var(--accent-blue); border-color: var(--accent-blue); color: #ffffff; }
+        .profile-btn.primary:hover { filter: brightness(1.12); }
+        .profile-btn.soon { opacity: 0.55; cursor: not-allowed; }
+        .profile-soon-note { margin-top: 8px; font-size: 0.7rem; text-align: center; color: var(--text-sub); }
+
+        .profile-edit-box { text-align: left; }
+        .profile-edit-box h2 { text-align: center; }
+        .profile-edit-box .avatar-picker-wrapper { margin-bottom: 8px; }
+        .pe-link-btn {
+            display: block;
+            margin: 0 auto 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            font-size: 0.78rem;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .pe-link-btn:hover { color: #ff4757; }
+        .pe-field { margin-bottom: 14px; }
+        .pe-field label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-sub); margin-bottom: 6px; }
+        .pe-field input { margin-bottom: 0 !important; }
+        .pe-textarea {
+            width: 100%;
+            height: 84px;
+            resize: none;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-input);
+            color: var(--text-main);
+            outline: none;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+        .pe-textarea:focus, .profile-edit-box input:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 2px var(--glow-color); }
+        .pe-count { text-align: right; font-size: 0.7rem; color: var(--text-sub); margin-top: 4px; }
+        .modal-box button.main-btn.pe-cancel {
+            margin-top: 8px;
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+
         /* --- INDICADOR "GRABANDO AUDIO" (adaptado al tema) --- */
         #recording-indicator {
             font-size: 0.8rem;
@@ -1292,8 +1494,7 @@
         .received-msg .msg-actions { left: 100%; padding-left: 8px; }
 
         #messages li:hover .msg-actions,
-        #messages li.actions-open .msg-actions,
-        .msg-actions:has(.dropdown-menu.show) {
+        #messages li.actions-open .msg-actions {
             opacity: 1;
             visibility: visible;
             pointer-events: auto;
@@ -1323,24 +1524,14 @@
         .msg-actions .react-quick-btn:hover { background: var(--hover-bg); }
         .msg-actions .react-more-btn { color: var(--text-sub); font-weight: 700; font-size: 1.05rem; }
         .msg-actions .react-more-btn:hover { color: var(--accent-blue); }
-        .msg-actions .msg-menu-container { margin-left: 0; display: flex; }
-        .msg-actions .menu-dots-btn {
-            color: var(--text-sub);
-            opacity: 1;
-            font-size: 1.05rem;
-            line-height: 1;
-            padding: 5px 7px;
-            border-radius: 6px;
-        }
-        .msg-actions .menu-dots-btn:hover { color: var(--text-main); background: var(--hover-bg); }
-        .msg-actions .dropdown-menu {
+        .msg-bubble .dropdown-menu {
             background: var(--bg-modal);
             border: 1px solid var(--border-color);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45), 0 0 14px var(--glow-color);
         }
-        .msg-actions .dropdown-item { color: var(--text-main); }
-        .msg-actions .dropdown-item:hover { background: var(--hover-bg); }
-        .msg-actions .dropdown-item.delete-opt { color: #ff4757; }
+        .msg-bubble .dropdown-item { color: var(--text-main); }
+        .msg-bubble .dropdown-item:hover { background: var(--hover-bg); }
+        .msg-bubble .dropdown-item.delete-opt { color: #ff4757; }
 
         /* Panel de emojis en modo "reaccionar a un mensaje" */
         .emoji-reaction-hint {
@@ -1948,6 +2139,38 @@
             <h2 style="color: #dc3545;">¡Has sido Expulsado!</h2>
             <p id="kicked-reason-text">El administrador te ha sacado de la sala.</p>
             <button class="main-btn" id="reconnect-btn" style="background: #dc3545;">Volver a Conectarte</button>
+        </div>
+    </div>
+
+    <!-- PERFIL DE USUARIO -->
+    <div id="profile-modal" class="modal-overlay profile-overlay" style="display: none;">
+        <div class="profile-card" id="profile-card"></div>
+    </div>
+
+    <!-- EDITAR MI PERFIL -->
+    <div id="profile-edit-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box profile-edit-box">
+            <h2>Editar perfil</h2>
+            <input type="file" id="pe-file" accept="image/png, image/jpeg, image/webp" style="display: none;" />
+
+            <div class="avatar-picker-wrapper">
+                <div class="avatar-preview-img" id="pe-avatar-box">👤</div>
+                <button type="button" class="pencil-btn" id="pe-pencil" title="Cambiar foto de perfil">✏️</button>
+            </div>
+            <button type="button" class="pe-link-btn" id="pe-remove-photo">Quitar foto</button>
+
+            <div class="pe-field">
+                <label for="pe-nick">Apodo</label>
+                <input type="text" id="pe-nick" maxlength="20" autocomplete="off" placeholder="Tu apodo...">
+            </div>
+            <div class="pe-field">
+                <label for="pe-bio">Descripción</label>
+                <textarea id="pe-bio" class="pe-textarea" maxlength="200" placeholder="Cuéntales algo sobre ti..."></textarea>
+                <div class="pe-count" id="pe-count">0/200</div>
+            </div>
+
+            <button type="button" class="main-btn" id="pe-save">Guardar cambios</button>
+            <button type="button" class="main-btn pe-cancel" id="pe-cancel">Cancelar</button>
         </div>
     </div>
 
@@ -2620,12 +2843,17 @@
         avatarFileInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file && file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    myAvatarBase64 = evt.target.result;
+                resizeAvatar(file, 256).then((small) => {
+                    myAvatarBase64 = small;
                     renderAvatarPreview(myAvatarBase64);
-                };
-                reader.readAsDataURL(file);
+                }).catch(() => {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        myAvatarBase64 = evt.target.result;
+                        renderAvatarPreview(myAvatarBase64);
+                    };
+                    reader.readAsDataURL(file);
+                });
             }
         });
 
@@ -2648,7 +2876,7 @@
                 nicknameInput.value = myNickname;
                 renderAvatarPreview(myAvatarBase64);
 
-                socket.emit('join', { nickname: myNickname, avatar: myAvatarBase64 });
+                socket.emit('join', buildJoinPayload());
                 welcomeModalOverlay.style.display = 'none';
                 logoutBtn.style.display = 'block';
             } else {
@@ -2668,7 +2896,7 @@
                     localStorage.removeItem('chat_avatar');
                 }
 
-                socket.emit('join', { nickname: myNickname, avatar: myAvatarBase64 });
+                socket.emit('join', buildJoinPayload());
                 welcomeModalOverlay.style.display = 'none';
                 logoutBtn.style.display = 'block';
             }
@@ -2680,8 +2908,288 @@
         logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('chat_nickname');
             localStorage.removeItem('chat_avatar');
+            localStorage.removeItem('chat_bio');
+            localStorage.removeItem('chat_member_since');
             window.location.reload();
         });
+
+        // ====== PERFIL DE USUARIO ======
+        let myBio = '';
+        let myMemberSince = 0;
+        const BIO_MAX = 200;
+        const STATUS_LABELS = { online: 'En línea', dnd: 'No molestar', idle: 'Ausente', offline: 'Desconectado' };
+
+        function buildJoinPayload() {
+            myBio = localStorage.getItem('chat_bio') || '';
+            myMemberSince = Number(localStorage.getItem('chat_member_since')) || 0;
+            if (!myMemberSince) {
+                myMemberSince = Date.now();
+                try { localStorage.setItem('chat_member_since', String(myMemberSince)); } catch (e) {}
+            }
+            return { nickname: myNickname, avatar: myAvatarBase64, bio: myBio, memberSince: myMemberSince };
+        }
+
+        function resizeAvatar(file, size) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    const c = document.createElement('canvas');
+                    c.width = c.height = size;
+                    const s = Math.min(img.width, img.height);
+                    c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size);
+                    URL.revokeObjectURL(url);
+                    resolve(c.toDataURL('image/webp', 0.85));
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagen')); };
+                img.src = url;
+            });
+        }
+
+        function fmtDate(ts) {
+            if (!ts) return 'Desconocido';
+            return new Date(ts).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function fmtAgo(ts) {
+            const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+            if (s < 60) return 'hace un momento';
+            const m = Math.floor(s / 60);
+            if (m < 60) return `hace ${m} min`;
+            const h = Math.floor(m / 60);
+            if (h < 24) return `hace ${h} h`;
+            return `hace ${Math.floor(h / 24)} d`;
+        }
+
+        function safeColor(c) {
+            return /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#888888';
+        }
+
+        function makeAvatarEl(u, cls) {
+            if (u.avatar) {
+                const img = document.createElement('img');
+                img.src = u.avatar;
+                img.className = cls;
+                img.title = u.nickname || '';
+                img.alt = '';
+                return img;
+            }
+            const d = document.createElement('div');
+            d.className = cls;
+            d.textContent = u.nickname ? u.nickname.charAt(0).toUpperCase() : '?';
+            d.style.background = cls === 'voice-avatar-img' ? 'rgba(0,0,0,0.25)' : safeColor(u.color);
+            return d;
+        }
+
+        // --- Tarjeta de perfil ---
+        const profileModal = document.getElementById('profile-modal');
+        const profileCard = document.getElementById('profile-card');
+
+        function closeProfile() { profileModal.style.display = 'none'; }
+
+        function openProfile(userId, fallback) {
+            const live = currentUsersData[userId];
+            const p = live || {
+                nickname: (fallback && fallback.user) || 'Usuario',
+                avatar: (fallback && fallback.avatar) || null,
+                color: (fallback && fallback.color) || '#888888',
+                status: 'offline'
+            };
+            const isSelf = userId === socket.id;
+            const status = live ? (p.status || 'online') : 'offline';
+            const color = safeColor(p.color);
+
+            profileCard.style.setProperty('--pc', color);
+            profileCard.innerHTML = `
+                <div class="profile-banner"></div>
+                <button type="button" class="profile-close" aria-label="Cerrar">✕</button>
+                <div class="profile-avatar-wrap"><span class="status-icon ${status}"></span></div>
+                <div class="profile-body">
+                    <div class="profile-name-row">
+                        <span class="profile-name"></span>
+                        <span class="profile-chip you">Tú</span>
+                    </div>
+                    <div class="profile-chips">
+                        <span class="profile-chip founder">👑 Fundador</span>
+                        <span class="profile-chip"><span class="status-icon ${status}"></span><span class="st-text"></span></span>
+                    </div>
+                    <div class="profile-divider"></div>
+                    <div class="profile-section"><h4>Sobre mí</h4><p class="profile-bio"></p></div>
+                    <div class="profile-grid">
+                        <div class="profile-section"><h4>Miembro desde</h4><p class="pf-since"></p></div>
+                        <div class="profile-section"><h4>Conectado</h4><p class="pf-conn"></p></div>
+                    </div>
+                    <div class="profile-actions"></div>
+                </div>
+            `;
+
+            const nameEl = profileCard.querySelector('.profile-name');
+            nameEl.textContent = p.nickname;
+            nameEl.style.color = color;
+            if (!isSelf) profileCard.querySelector('.profile-chip.you').style.display = 'none';
+            if (!p.isFirst) profileCard.querySelector('.profile-chip.founder').style.display = 'none';
+            profileCard.querySelector('.st-text').textContent = STATUS_LABELS[status] || STATUS_LABELS.online;
+
+            const avatarEl = makeAvatarEl(p, 'profile-avatar-img');
+            avatarEl.style.background = p.avatar ? '' : color;
+            profileCard.querySelector('.profile-avatar-wrap').insertBefore(avatarEl, profileCard.querySelector('.profile-avatar-wrap').firstChild);
+
+            const bioEl = profileCard.querySelector('.profile-bio');
+            if (p.bio) { bioEl.textContent = p.bio; } else { bioEl.textContent = 'Sin descripción.'; bioEl.classList.add('muted'); }
+
+            profileCard.querySelector('.pf-since').textContent = fmtDate(p.memberSince);
+            profileCard.querySelector('.pf-conn').textContent = live && p.connectedAt
+                ? `${new Date(p.connectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${fmtAgo(p.connectedAt)}`
+                : 'Desconectado';
+
+            const actions = profileCard.querySelector('.profile-actions');
+            if (isSelf) {
+                const editBtn = document.createElement('button');
+                editBtn.type = 'button';
+                editBtn.className = 'profile-btn primary';
+                editBtn.textContent = '✏️ Editar perfil';
+                editBtn.addEventListener('click', () => { closeProfile(); openProfileEdit(); });
+                actions.appendChild(editBtn);
+            } else {
+                ['🤝 Agregar amigo', '💬 Mensaje privado'].forEach(label => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'profile-btn soon';
+                    b.textContent = label;
+                    b.disabled = true;
+                    b.title = 'Próximamente';
+                    actions.appendChild(b);
+                });
+                const note = document.createElement('div');
+                note.className = 'profile-soon-note';
+                note.textContent = 'Amigos y chat privado: próximamente';
+                actions.parentNode.appendChild(note);
+            }
+
+            profileCard.querySelector('.profile-close').addEventListener('click', closeProfile);
+            profileModal.style.display = 'flex';
+        }
+
+        profileModal.addEventListener('click', (e) => { if (e.target === profileModal) closeProfile(); });
+
+        // Clic en la foto de quien escribió un mensaje (o en el avatar de una nota de voz)
+        messages.addEventListener('click', (e) => {
+            const av = e.target.closest('li > .user-avatar, .voice-avatar-img');
+            if (!av) return;
+            const li = av.closest('#messages > li');
+            if (!li || !li.dataset.senderId) return;
+            openProfile(li.dataset.senderId, {
+                user: li.dataset.userName,
+                color: li.dataset.userColor,
+                avatar: av.tagName === 'IMG' ? av.src : null
+            });
+        });
+
+        // --- Editar mi perfil ---
+        const peModal = document.getElementById('profile-edit-modal');
+        const peFile = document.getElementById('pe-file');
+        const peAvatarBox = document.getElementById('pe-avatar-box');
+        const pePencil = document.getElementById('pe-pencil');
+        const peRemove = document.getElementById('pe-remove-photo');
+        const peNick = document.getElementById('pe-nick');
+        const peBio = document.getElementById('pe-bio');
+        const peCount = document.getElementById('pe-count');
+        const peSave = document.getElementById('pe-save');
+        const peCancel = document.getElementById('pe-cancel');
+        let peAvatar = null;
+
+        function renderPeAvatar() {
+            peAvatarBox.innerHTML = '';
+            if (peAvatar) {
+                const img = document.createElement('img');
+                img.src = peAvatar;
+                img.style.cssText = 'width:100%; height:100%; border-radius:50%; object-fit:cover;';
+                peAvatarBox.appendChild(img);
+            } else {
+                peAvatarBox.textContent = '👤';
+            }
+            peRemove.style.display = peAvatar ? 'block' : 'none';
+        }
+
+        function updatePeCount() { peCount.textContent = `${peBio.value.length}/${BIO_MAX}`; }
+
+        function openProfileEdit() {
+            peNick.value = myNickname;
+            peBio.value = myBio;
+            peAvatar = myAvatarBase64;
+            renderPeAvatar();
+            updatePeCount();
+            peModal.style.display = 'flex';
+            peNick.focus();
+        }
+
+        function saveProfileEdit() {
+            const nick = peNick.value.trim();
+            if (!nick) { peNick.focus(); return; }
+            const bio = peBio.value.trim().slice(0, BIO_MAX);
+
+            myNickname = nick;
+            myAvatarBase64 = peAvatar;
+            myBio = bio;
+            nicknameInput.value = nick;
+
+            try {
+                localStorage.setItem('chat_nickname', nick);
+                if (peAvatar) localStorage.setItem('chat_avatar', peAvatar); else localStorage.removeItem('chat_avatar');
+                localStorage.setItem('chat_bio', bio);
+            } catch (e) {}
+
+            socket.emit('update profile', { nickname: nick, avatar: peAvatar, bio: bio });
+            peModal.style.display = 'none';
+        }
+
+        pePencil.addEventListener('click', () => peFile.click());
+        peAvatarBox.addEventListener('click', () => peFile.click());
+        peRemove.addEventListener('click', () => { peAvatar = null; renderPeAvatar(); });
+        peFile.addEventListener('change', async (e) => {
+            const f = e.target.files[0];
+            if (f && f.type.startsWith('image/')) {
+                try {
+                    peAvatar = await resizeAvatar(f, 256);
+                    renderPeAvatar();
+                } catch (err) {
+                    alert('No se pudo cargar la imagen.');
+                }
+            }
+            peFile.value = '';
+        });
+        peBio.addEventListener('input', updatePeCount);
+        peNick.addEventListener('keydown', (e) => { if (e.key === 'Enter') saveProfileEdit(); });
+        peSave.addEventListener('click', saveProfileEdit);
+        peCancel.addEventListener('click', () => { peModal.style.display = 'none'; });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeProfile();
+                peModal.style.display = 'none';
+            }
+        });
+
+        // Mantiene al día nombre y foto en los mensajes ya escritos cuando alguien cambia su perfil
+        const profileSig = {};
+        function syncMessagesWithUsers(usersObj) {
+            Object.entries(usersObj).forEach(([id, u]) => {
+                const sig = (u.nickname || '') + '|' + (u.avatar ? u.avatar.length + ':' + u.avatar.slice(-24) : '');
+                if (profileSig[id] === undefined) { profileSig[id] = sig; return; }
+                if (profileSig[id] === sig) return;
+                profileSig[id] = sig;
+
+                Array.from(messages.children).forEach(li => {
+                    if (li.dataset.senderId !== id) return;
+                    li.dataset.userName = u.nickname;
+                    const strong = li.querySelector('.msg-info strong');
+                    if (strong) strong.textContent = u.nickname;
+                    const main = li.querySelector(':scope > .user-avatar');
+                    if (main) main.replaceWith(makeAvatarEl(u, 'user-avatar'));
+                    li.querySelectorAll('.voice-avatar-img').forEach(v => v.replaceWith(makeAvatarEl(u, 'voice-avatar-img')));
+                });
+            });
+        }
 
         // ====== SELECTOR DE GIFS ======
         const gifToggleBtn = document.getElementById('gif-toggle-btn');
@@ -3300,6 +3808,8 @@
             const item = document.createElement('li');
             item.id = data.id;
             item.dataset.senderId = data.senderId;
+            item.dataset.userName = data.user || '';
+            item.dataset.userColor = data.color || '';
 
             const isMe = (data.senderId === socket.id);
             item.className = isMe ? 'sent-msg' : 'received-msg';
@@ -3350,6 +3860,16 @@
                             <span><strong>${data.user}</strong></span>
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <span>${data.time}</span>
+                                <div class="msg-menu-container">
+                                    <button class="menu-dots-btn" title="Opciones">⋮</button>
+                                    <div class="dropdown-menu">
+                                        <button class="dropdown-item reply-msg-btn">↩️ Responder</button>
+                                        ${showOwnerAdminOpts ? `
+                                            ${data.text ? '<button class="dropdown-item edit-msg-btn">✏️ Editar</button>' : ''}
+                                            <button class="dropdown-item delete-opt del-msg-btn">🗑️ Eliminar</button>
+                                        ` : ''}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         ${replyHtml}
@@ -3364,16 +3884,6 @@
                                 <button class="react-quick-btn" data-emoji="👎" title="Dislike">👎</button>
                                 <button class="react-quick-btn" data-emoji="💩" title="Caca">💩</button>
                                 <button class="react-quick-btn react-more-btn" title="Más emojis">+</button>
-                                <div class="msg-menu-container">
-                                    <button class="menu-dots-btn" title="Opciones">⋮</button>
-                                    <div class="dropdown-menu">
-                                        <button class="dropdown-item reply-msg-btn">↩️ Responder</button>
-                                        ${showOwnerAdminOpts ? `
-                                            ${data.text ? '<button class="dropdown-item edit-msg-btn">✏️ Editar</button>' : ''}
-                                            <button class="dropdown-item delete-opt del-msg-btn">🗑️ Eliminar</button>
-                                        ` : ''}
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -3424,7 +3934,7 @@
             // En pantallas táctiles (sin hover) se muestran al tocar el mensaje
             item.addEventListener('click', (e) => {
                 if (!window.matchMedia('(hover: none)').matches) return;
-                if (e.target.closest('.msg-actions, .reaction-pill, .msg-image, .voice-player')) return;
+                if (e.target.closest('.msg-actions, .reaction-pill, .msg-image, .voice-player, .user-avatar')) return;
                 const wasOpen = item.classList.contains('actions-open');
                 document.querySelectorAll('#messages li.actions-open').forEach(l => l.classList.remove('actions-open'));
                 if (!wasOpen) {
@@ -3565,6 +4075,7 @@
         socket.on('update-users', (usersObj) => {
             currentUsersData = usersObj;
             renderUsersList(usersObj);
+            syncMessagesWithUsers(usersObj);
         });
 
         function renderUsersList(usersObj) {
@@ -3593,6 +4104,17 @@
                     <span style="color: ${uData.color}; font-weight: bold;">${uData.nickname}</span>
                 `;
                 li.appendChild(leftDiv);
+
+                leftDiv.addEventListener('click', () => openProfile(id));
+                if (id === socket.id) {
+                    const pen = document.createElement('button');
+                    pen.type = 'button';
+                    pen.className = 'self-edit-btn';
+                    pen.title = 'Editar mi perfil';
+                    pen.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>';
+                    pen.addEventListener('click', (ev) => { ev.stopPropagation(); openProfileEdit(); });
+                    leftDiv.appendChild(pen);
+                }
 
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'user-actions';
@@ -3626,7 +4148,7 @@
                         socket.emit('kick user', { targetId: id, adminName: myNickname });
                     });
 
-                    actionsDiv.appendChild(editBtn);
+                    if (id !== socket.id) actionsDiv.appendChild(editBtn);
                     actionsDiv.appendChild(colorPicker);
                     actionsDiv.appendChild(kickBtn);
                 }
