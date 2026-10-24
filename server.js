@@ -138,6 +138,13 @@ function broadcastRecordingStatus() {
 let messageIdCounter = 0;
 const messagesStore = {};
 
+// --- Limpieza de datos de perfil ---
+function cleanName(n) { return String(n || '').replace(/[<>]/g, '').trim().slice(0, 24); }
+function cleanBio(b) { return String(b || '').replace(/[<>]/g, '').trim().slice(0, 200); }
+function cleanAvatar(a) {
+    return (typeof a === 'string' && a.startsWith('data:image/') && a.length <= 8000000) ? a : null;
+}
+
 function getUniqueColor() {
     const color = AVAILABLE_COLORS[colorIndex % AVAILABLE_COLORS.length];
     colorIndex++;
@@ -146,8 +153,12 @@ function getUniqueColor() {
 
 io.on('connection', (socket) => {
     socket.on('join', (userData) => {
-        const nickname = (userData && userData.nickname) ? userData.nickname.trim() : 'Anónimo';
-        const avatar = (userData && userData.avatar) ? userData.avatar : null;
+        const nickname = (userData && userData.nickname) ? (cleanName(userData.nickname) || 'Anónimo') : 'Anónimo';
+        const avatar = (userData && userData.avatar) ? cleanAvatar(userData.avatar) : null;
+        const bio = (userData && userData.bio) ? cleanBio(userData.bio) : '';
+
+        let memberSince = Number(userData && userData.memberSince);
+        if (!isFinite(memberSince) || memberSince < 1577836800000 || memberSince > Date.now()) memberSince = Date.now();
 
         socket.nickname = nickname;
         
@@ -159,10 +170,37 @@ io.on('connection', (socket) => {
             avatar: avatar,
             color: socket.userColor,
             isFirst: isFirst,
-            status: 'online'
+            status: 'online',
+            bio: bio,
+            memberSince: memberSince,
+            connectedAt: Date.now()
         };
 
         io.emit('system-message', `${socket.nickname} ha entrado al chat.`);
+        io.emit('update-users', users);
+    });
+
+    socket.on('update profile', (p) => {
+        const u = users[socket.id];
+        if (!u || !p) return;
+
+        const oldName = u.nickname;
+        const newName = cleanName(p.nickname);
+        if (newName) {
+            u.nickname = newName;
+            socket.nickname = newName;
+        }
+        if (p.avatar === null) {
+            u.avatar = null;
+        } else if (typeof p.avatar === 'string') {
+            const a = cleanAvatar(p.avatar);
+            if (a) u.avatar = a;
+        }
+        if (typeof p.bio === 'string') u.bio = cleanBio(p.bio);
+
+        if (newName && newName !== oldName) {
+            io.emit('system-message', `${oldName} ahora se llama ${newName}.`);
+        }
         io.emit('update-users', users);
     });
 
