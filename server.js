@@ -31,7 +31,6 @@ function getUniqueColor() {
 
 io.on('connection', (socket) => {
     socket.on('join', (userData) => {
-        // Recibe { nickname, avatar }
         const nickname = (userData && userData.nickname) ? userData.nickname.trim() : 'Anónimo';
         const avatar = (userData && userData.avatar) ? userData.avatar : null;
 
