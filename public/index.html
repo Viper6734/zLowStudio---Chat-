@@ -123,17 +123,8 @@
             to { opacity: 1; transform: scale(1); }
         }
 
-        .modal-box h2 {
-            margin-bottom: 15px;
-            font-size: 1.4rem;
-        }
-
-        .modal-box p {
-            font-size: 0.95rem;
-            color: var(--text-sub);
-            margin-bottom: 20px;
-            line-height: 1.4;
-        }
+        .modal-box h2 { margin-bottom: 15px; font-size: 1.4rem; }
+        .modal-box p { font-size: 0.95rem; color: var(--text-sub); margin-bottom: 20px; line-height: 1.4; }
 
         .modal-box input {
             width: 100%;
@@ -248,6 +239,12 @@
             font-size: 1.15rem;
         }
 
+        /* Dropdown selector de Estado estilo Discord */
+        .status-dropdown-container {
+            position: relative;
+            display: inline-block;
+        }
+
         .online-badge {
             display: inline-flex;
             align-items: center;
@@ -255,21 +252,92 @@
             background: rgba(40, 167, 69, 0.15);
             border: 1px solid rgba(40, 167, 69, 0.3);
             color: #28a745;
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .online-badge:hover { filter: brightness(1.15); }
+
+        .status-menu {
+            display: none;
+            position: absolute;
+            top: 110%;
+            left: 0;
+            background: #1a1a24;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+            z-index: 300;
+            min-width: 170px;
+            overflow: hidden;
+            padding: 4px;
+        }
+        .status-menu.show { display: block; animation: modalFadeIn 0.15s ease-out; }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            color: #fff;
+            background: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+        .status-item:hover { background: rgba(255,255,255,0.08); }
+
+        /* Iconos de Estado Estilo Discord */
+        .status-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+            position: relative;
         }
 
-        /* Estado No Molestar para Modo Enfoque */
-        .online-badge.dnd {
-            background: rgba(220, 53, 69, 0.15);
-            border-color: rgba(220, 53, 69, 0.3);
-            color: #dc3545;
+        /* 🟢 Online */
+        .status-icon.online {
+            background-color: #28a745;
+            box-shadow: 0 0 6px #28a745;
         }
-        .online-badge.dnd .status-dot {
+
+        /* 🔴 No Molestar (Discord Line) */
+        .status-icon.dnd {
             background-color: #dc3545;
             box-shadow: 0 0 6px #dc3545;
+        }
+        .status-icon.dnd::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 2px;
+            width: 8px;
+            height: 2px;
+            background-color: #111115;
+            border-radius: 1px;
+        }
+
+        /* 🌙 Ausente (Discord Moon) */
+        .status-icon.idle {
+            background-color: #ffcc00;
+            box-shadow: 0 0 6px #ffcc00;
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+        }
+
+        /* ⚪ Invisible / Desconectado */
+        .status-icon.offline {
+            background-color: #6c757d;
+            border: 2px solid #111115;
+            box-sizing: border-box;
         }
 
         .header-actions {
@@ -586,7 +654,6 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Estado minimizado / colapsado del panel lateral */
         .users-sidebar.collapsed {
             width: 0 !important;
             padding: 0 !important;
@@ -626,20 +693,6 @@
             align-items: center;
             gap: 10px;
             overflow: hidden;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background-color: #28a745;
-            border-radius: 50%;
-            box-shadow: 0 0 6px #28a745;
-            flex-shrink: 0;
-        }
-
-        .status-dot.first-user {
-            background-color: #ffcc00;
-            box-shadow: 0 0 8px #ffcc00;
         }
 
         .user-actions {
@@ -727,14 +780,6 @@
                         <button class="opt-btn sound-opt" data-val="bubbles">Burbujas Pop</button>
                     </div>
                 </div>
-
-                <div class="setting-card">
-                    <label id="st-label-focus">Modo Enfoque (Silenciar + No Molestar)</label>
-                    <div class="setting-options">
-                        <button class="opt-btn focus-opt" data-val="on">Activado</button>
-                        <button class="opt-btn focus-opt active" data-val="off">Desactivado</button>
-                    </div>
-                </div>
             </div>
 
             <button class="main-btn" id="close-settings-btn">Guardar y Cerrar</button>
@@ -786,10 +831,33 @@
             <div class="chat-header">
                 <div class="header-title">
                     <span>Chat online</span>
-                    <span class="online-badge" id="online-badge">
-                        <span class="status-dot"></span>
-                        <span id="txt-active">Activo</span>
-                    </span>
+                    
+                    <!-- Dropdown de Estado Estilo Discord -->
+                    <div class="status-dropdown-container">
+                        <div class="online-badge" id="current-status-badge">
+                            <span class="status-icon online" id="current-status-icon"></span>
+                            <span id="txt-active">Activo</span>
+                            <span style="font-size: 0.7rem; margin-left: 2px;">▾</span>
+                        </div>
+                        <div class="status-menu" id="status-menu">
+                            <button class="status-item" data-status="online">
+                                <span class="status-icon online"></span>
+                                <span>Activo</span>
+                            </button>
+                            <button class="status-item" data-status="dnd">
+                                <span class="status-icon dnd"></span>
+                                <span>No molestar</span>
+                            </button>
+                            <button class="status-item" data-status="idle">
+                                <span class="status-icon idle"></span>
+                                <span>Ausente</span>
+                            </button>
+                            <button class="status-item" data-status="offline">
+                                <span class="status-icon offline"></span>
+                                <span>Desconectado</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 <div class="header-actions">
                     <button class="toggle-sidebar-btn" id="toggle-sidebar-btn" title="Minimizar Lista">▶</button>
@@ -837,7 +905,11 @@
         const closeSettingsBtn = document.getElementById('close-settings-btn');
         const sidebar = document.getElementById('sidebar');
         const toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
-        const onlineBadge = document.getElementById('online-badge');
+
+        const currentStatusBadge = document.getElementById('current-status-badge');
+        const currentStatusIcon = document.getElementById('current-status-icon');
+        const statusMenu = document.getElementById('status-menu');
+        const txtActive = document.getElementById('txt-active');
 
         const adminTrigger = document.getElementById('admin-trigger');
         const adminModal = document.getElementById('admin-modal');
@@ -882,38 +954,33 @@
         let replyingTo = null;
         let typingTimeout = null;
         let soundType = 'synth';
-        let isFocusMode = false;
+        let currentStatus = 'online';
 
         function saveSettings(key, val) {
             localStorage.setItem('chat_' + key, val);
         }
 
-        function loadSettings() {
-            const savedName = localStorage.getItem('chat_nickname');
-            if (savedName) nicknameInput.value = savedName;
+        function playMenuSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.05);
 
-            const theme = localStorage.getItem('chat_theme') || 'default';
-            setTheme(theme);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
 
-            const lang = localStorage.getItem('chat_lang') || 'es';
-            setLanguage(lang);
-
-            const sound = localStorage.getItem('chat_sound') || 'synth';
-            setSoundType(sound);
-
-            const focus = localStorage.getItem('chat_focus') || 'off';
-            setFocusMode(focus);
-
-            const isCollapsed = localStorage.getItem('chat_sidebar_collapsed') === 'true';
-            if (isCollapsed) {
-                sidebar.classList.add('collapsed');
-                toggleSidebarBtn.textContent = '◀';
-            }
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.05);
+            } catch (e) {}
         }
 
         function playMessageSound() {
-            // Si Modo Enfoque está activo, no reproduce sonidos
-            if (isFocusMode) return;
+            if (currentStatus === 'dnd') return;
 
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -949,6 +1016,57 @@
             } catch (e) {}
         }
 
+        function loadSettings() {
+            const savedName = localStorage.getItem('chat_nickname');
+            if (savedName) nicknameInput.value = savedName;
+
+            const theme = localStorage.getItem('chat_theme') || 'default';
+            setTheme(theme);
+
+            const lang = localStorage.getItem('chat_lang') || 'es';
+            setLanguage(lang);
+
+            const sound = localStorage.getItem('chat_sound') || 'synth';
+            setSoundType(sound);
+
+            const isCollapsed = localStorage.getItem('chat_sidebar_collapsed') === 'true';
+            if (isCollapsed) {
+                sidebar.classList.add('collapsed');
+                toggleSidebarBtn.textContent = '◀';
+            }
+        }
+
+        // Dropdown de Estado Estilo Discord
+        currentStatusBadge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            playMenuSound();
+            statusMenu.classList.toggle('show');
+        });
+
+        document.querySelectorAll('.status-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const status = btn.dataset.status;
+                setStatus(status);
+                statusMenu.classList.remove('show');
+                socket.emit('change status', status);
+            });
+        });
+
+        function setStatus(status) {
+            currentStatus = status;
+            currentStatusIcon.className = 'status-icon ' + status;
+
+            const lang = localStorage.getItem('chat_lang') || 'es';
+            const statusTexts = {
+                online: lang === 'en' ? 'Active' : 'Activo',
+                dnd: lang === 'en' ? 'Do Not Disturb' : 'No molestar',
+                idle: lang === 'en' ? 'Idle' : 'Ausente',
+                offline: lang === 'en' ? 'Invisible' : 'Desconectado'
+            };
+
+            txtActive.textContent = statusTexts[status] || statusTexts.online;
+        }
+
         function joinChat() {
             const name = nicknameInput.value.trim();
             if (name !== '') {
@@ -967,7 +1085,6 @@
         openSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
         closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = 'none');
 
-        // Toggle Minimizar Sidebar
         toggleSidebarBtn.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
             const isCollapsed = sidebar.classList.contains('collapsed');
@@ -989,28 +1106,23 @@
                 btn.classList.toggle('active', btn.dataset.val === lang);
             });
             saveSettings('lang', lang);
-
-            const activeTxt = isFocusMode ? (lang === 'en' ? 'Do Not Disturb' : 'No Molestar') : (lang === 'en' ? 'Active' : 'Activo');
+            setStatus(currentStatus);
 
             if (lang === 'en') {
-                document.getElementById('txt-active').textContent = activeTxt;
                 document.getElementById('st-title').textContent = '⚙️ Settings';
                 document.getElementById('st-label-theme').textContent = 'Interface Theme';
                 document.getElementById('st-label-lang').textContent = 'Language';
                 document.getElementById('st-label-sound').textContent = 'Notification Sound';
-                document.getElementById('st-label-focus').textContent = 'Focus Mode';
                 document.getElementById('close-settings-btn').textContent = 'Save & Close';
                 document.getElementById('btn-send').textContent = 'Send';
                 input.placeholder = 'Type a message...';
                 document.getElementById('join-title').textContent = 'Join Chat';
                 joinBtn.textContent = 'Enter';
             } else {
-                document.getElementById('txt-active').textContent = activeTxt;
                 document.getElementById('st-title').textContent = '⚙️ Configuración';
                 document.getElementById('st-label-theme').textContent = 'Tema de Interfaz';
                 document.getElementById('st-label-lang').textContent = 'Idioma';
                 document.getElementById('st-label-sound').textContent = 'Sonido de Notificación';
-                document.getElementById('st-label-focus').textContent = 'Modo Enfoque';
                 document.getElementById('close-settings-btn').textContent = 'Guardar y Cerrar';
                 document.getElementById('btn-send').textContent = 'Enviar';
                 input.placeholder = 'Escribe un mensaje...';
@@ -1027,34 +1139,13 @@
             saveSettings('sound', snd);
         }
 
-        function setFocusMode(focus) {
-            isFocusMode = (focus === 'on');
-            document.querySelectorAll('.focus-opt').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.val === focus);
-            });
-
-            const currentLang = localStorage.getItem('chat_lang') || 'es';
-
-            if (isFocusMode) {
-                onlineBadge.classList.add('dnd');
-                document.getElementById('txt-active').textContent = currentLang === 'en' ? 'Do Not Disturb' : 'No Molestar';
-            } else {
-                onlineBadge.classList.remove('dnd');
-                document.getElementById('txt-active').textContent = currentLang === 'en' ? 'Active' : 'Activo';
-            }
-
-            saveSettings('focus', focus);
-        }
-
         document.querySelectorAll('.theme-opt').forEach(btn => btn.addEventListener('click', () => setTheme(btn.dataset.val)));
         document.querySelectorAll('.lang-opt').forEach(btn => btn.addEventListener('click', () => setLanguage(btn.dataset.val)));
         document.querySelectorAll('.sound-opt').forEach(btn => btn.addEventListener('click', () => {
             setSoundType(btn.dataset.val);
             playMessageSound();
         }));
-        document.querySelectorAll('.focus-opt').forEach(btn => btn.addEventListener('click', () => setFocusMode(btn.dataset.val)));
 
-        // Control de escritura con tiempo de espera
         input.addEventListener('input', () => {
             socket.emit('typing', true);
             clearTimeout(typingTimeout);
@@ -1063,9 +1154,7 @@
             }, 1000);
         });
 
-        // Actualización inteligente de estado de escritura
         socket.on('typing update', (typingNames) => {
-            // Filtrar mi propio nombre
             const otherTyping = typingNames.filter(name => name !== myNickname);
 
             if (otherTyping.length === 0) {
@@ -1149,6 +1238,9 @@
         window.addEventListener('click', (e) => {
             if (!e.target.closest('.msg-menu-container')) {
                 document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+            }
+            if (!e.target.closest('.status-dropdown-container')) {
+                statusMenu.classList.remove('show');
             }
         });
 
@@ -1287,22 +1379,25 @@
         function renderUsersList(usersObj) {
             usersList.innerHTML = '';
             let entries = Object.entries(usersObj);
-            userCount.textContent = entries.length;
 
-            entries.sort((a, b) => (b[1].isFirst ? 1 : 0) - (a[1].isFirst ? 1 : 0));
+            // Filtrar usuarios con estado 'offline' (Invisible / Desconectado)
+            const visibleEntries = entries.filter(([id, uData]) => uData.status !== 'offline');
+            userCount.textContent = visibleEntries.length;
 
-            entries.forEach(([id, uData]) => {
+            visibleEntries.sort((a, b) => (b[1].isFirst ? 1 : 0) - (a[1].isFirst ? 1 : 0));
+
+            visibleEntries.forEach(([id, uData]) => {
                 const li = document.createElement('li');
                 
                 const leftDiv = document.createElement('div');
                 leftDiv.className = 'user-left';
 
-                const dotClass = uData.isFirst ? 'status-dot first-user' : 'status-dot';
+                const userStatus = uData.status || 'online';
                 const initial = uData.nickname ? uData.nickname.charAt(0).toUpperCase() : '?';
 
                 leftDiv.innerHTML = `
                     <div class="user-avatar" style="background-color: ${uData.color}">${initial}</div>
-                    <span class="${dotClass}"></span>
+                    <span class="status-icon ${userStatus}"></span>
                     <span style="color: ${uData.color}; font-weight: bold;">${uData.nickname}</span>
                 `;
                 li.appendChild(leftDiv);
