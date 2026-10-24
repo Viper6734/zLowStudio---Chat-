@@ -1,6 +1,9 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
@@ -145,6 +148,143 @@ function cleanAvatar(a) {
     return (typeof a === 'string' && a.startsWith('data:image/') && a.length <= 8000000) ? a : null;
 }
 
+
+// ============================================================
+// AMIGOS
+// Cada navegador tiene un "token" secreto (nunca se comparte). Con él se
+// calcula un uid público, que es el que usan los demás para agregarte.
+// Las amistades y solicitudes se guardan en un archivo JSON (best effort):
+// en hostings con disco temporal (p. ej. plan gratis de Render) se pierden al
+// volver a desplegar. Puedes cambiar la ruta con la variable FRIENDS_FILE.
+// ============================================================
+const FRIENDS_FILE = process.env.FRIENDS_FILE || path.join(__dirname, 'friends-data.json');
+let profiles = {};          // uid -> { nickname, avatar, color, bio, memberSince, lastSeen }
+const friendsMap = {};      // uid -> Set(uid)
+const requestsMap = {};     // uid destino -> Set(uid origen)
+const onlineByUid = {};     // uid -> socket.id activo
+
+function uidFromToken(token) {
+    return crypto.createHash('sha256').update('chat-uid:' + token).digest('hex').slice(0, 16);
+}
+
+function loadFriendsData() {
+    try {
+        const raw = JSON.parse(fs.readFileSync(FRIENDS_FILE, 'utf8'));
+        profiles = raw.profiles || {};
+        Object.entries(raw.friends || {}).forEach(([k, v]) => { friendsMap[k] = new Set(v); });
+        Object.entries(raw.requests || {}).forEach(([k, v]) => { requestsMap[k] = new Set(v); });
+    } catch (e) { /* primera vez: no hay archivo */ }
+}
+loadFriendsData();
+
+let saveTimer = null;
+function saveFriendsData() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+        const keep = new Set();
+        const friends = {};
+        const requests = {};
+        Object.entries(friendsMap).forEach(([k, set]) => {
+            if (set.size) { friends[k] = [...set]; keep.add(k); set.forEach(x => keep.add(x)); }
+        });
+        Object.entries(requestsMap).forEach(([k, set]) => {
+            if (set.size) { requests[k] = [...set]; keep.add(k); set.forEach(x => keep.add(x)); }
+        });
+        const outProfiles = {};
+        keep.forEach(id => {
+            const p = profiles[id];
+            if (p) outProfiles[id] = Object.assign({}, p, { avatar: (p.avatar && p.avatar.length <= 300000) ? p.avatar : null });
+        });
+        fs.writeFile(FRIENDS_FILE, JSON.stringify({ profiles: outProfiles, friends, requests }), (err) => {
+            if (err) console.error('No se pudo guardar los amigos:', err.message);
+        });
+    }, 600);
+}
+
+function hasRelations(id) {
+    if (friendsMap[id] && friendsMap[id].size) return true;
+    if (requestsMap[id] && requestsMap[id].size) return true;
+    return Object.values(requestsMap).some(set => set.has(id));
+}
+
+function friendStatus(id) {
+    const sid = onlineByUid[id];
+    const u = sid && users[sid];
+    return u ? (u.status || 'online') : 'offline';
+}
+
+function friendEntry(id) {
+    const p = profiles[id] || { nickname: 'Usuario' };
+    const sid = onlineByUid[id];
+    const src = (sid && users[sid]) || p;
+    return {
+        uid: id,
+        nickname: src.nickname || 'Usuario',
+        avatar: src.avatar || null,
+        color: src.color || '#888888',
+        bio: src.bio || '',
+        memberSince: src.memberSince || 0,
+        lastSeen: p.lastSeen || 0,
+        status: friendStatus(id)
+    };
+}
+
+function buildFriendsState(id) {
+    return {
+        me: id,
+        friends: [...(friendsMap[id] || [])].map(friendEntry),
+        incoming: [...(requestsMap[id] || [])].map(f => {
+            const e = friendEntry(f);
+            return { uid: e.uid, nickname: e.nickname, avatar: e.avatar, color: e.color };
+        }),
+        outgoing: Object.keys(requestsMap).filter(to => requestsMap[to].has(id))
+    };
+}
+
+function pushFriendsState(id) {
+    const sid = onlineByUid[id];
+    if (sid) io.to(sid).emit('friends state', buildFriendsState(id));
+}
+
+function notifyFriendsOf(id) {
+    pushFriendsState(id);
+    (friendsMap[id] || []).forEach(pushFriendsState);
+}
+
+function notifyUid(id, text) {
+    const sid = onlineByUid[id];
+    if (sid) io.to(sid).emit('friend notice', { text });
+}
+
+function acceptFriendship(me, other) {
+    if (requestsMap[me]) requestsMap[me].delete(other);
+    if (requestsMap[other]) requestsMap[other].delete(me);
+    if (!friendsMap[me]) friendsMap[me] = new Set();
+    if (!friendsMap[other]) friendsMap[other] = new Set();
+    friendsMap[me].add(other);
+    friendsMap[other].add(me);
+    saveFriendsData();
+    pushFriendsState(me);
+    pushFriendsState(other);
+    const myName = (profiles[me] && profiles[me].nickname) || 'Alguien';
+    notifyUid(other, `${myName} aceptó tu solicitud de amistad`);
+}
+
+function syncProfileFromSocket(socketId) {
+    const u = users[socketId];
+    if (!u || !u.uid) return;
+    profiles[u.uid] = {
+        nickname: u.nickname,
+        avatar: u.avatar,
+        color: u.color,
+        bio: u.bio,
+        memberSince: u.memberSince,
+        lastSeen: Date.now()
+    };
+    if (hasRelations(u.uid)) saveFriendsData();
+    notifyFriendsOf(u.uid);
+}
+
 function getUniqueColor() {
     const color = AVAILABLE_COLORS[colorIndex % AVAILABLE_COLORS.length];
     colorIndex++;
@@ -156,6 +296,10 @@ io.on('connection', (socket) => {
         const nickname = (userData && userData.nickname) ? (cleanName(userData.nickname) || 'Anónimo') : 'Anónimo';
         const avatar = (userData && userData.avatar) ? cleanAvatar(userData.avatar) : null;
         const bio = (userData && userData.bio) ? cleanBio(userData.bio) : '';
+
+        const token = (userData && typeof userData.token === 'string' && userData.token.length >= 16 && userData.token.length <= 100) ? userData.token : null;
+        const uid = token ? uidFromToken(token) : null;
+        socket.uid = uid;
 
         let memberSince = Number(userData && userData.memberSince);
         if (!isFinite(memberSince) || memberSince < 1577836800000 || memberSince > Date.now()) memberSince = Date.now();
@@ -173,11 +317,76 @@ io.on('connection', (socket) => {
             status: 'online',
             bio: bio,
             memberSince: memberSince,
-            connectedAt: Date.now()
+            connectedAt: Date.now(),
+            uid: uid
         };
+
+        if (uid) {
+            onlineByUid[uid] = socket.id;
+            syncProfileFromSocket(socket.id);
+        }
 
         io.emit('system-message', `${socket.nickname} ha entrado al chat.`);
         io.emit('update-users', users);
+    });
+
+    socket.on('friend request', (d) => {
+        const me = socket.uid;
+        const to = d && d.toUid;
+        if (!me || typeof to !== 'string' || to === me || !profiles[to]) return;
+        if (friendsMap[me] && friendsMap[me].has(to)) return;
+
+        // Si la otra persona ya me había enviado una, se aceptan mutuamente
+        if (requestsMap[me] && requestsMap[me].has(to)) return acceptFriendship(me, to);
+
+        if (!requestsMap[to]) requestsMap[to] = new Set();
+        if (requestsMap[to].has(me) || requestsMap[to].size >= 50) return;
+        requestsMap[to].add(me);
+
+        saveFriendsData();
+        pushFriendsState(me);
+        pushFriendsState(to);
+        const myName = (users[socket.id] && users[socket.id].nickname) || 'Alguien';
+        notifyUid(to, `${myName} te envió una solicitud de amistad`);
+    });
+
+    socket.on('friend accept', (d) => {
+        const me = socket.uid;
+        const from = d && d.fromUid;
+        if (!me || typeof from !== 'string') return;
+        if (!requestsMap[me] || !requestsMap[me].has(from)) return;
+        acceptFriendship(me, from);
+    });
+
+    socket.on('friend decline', (d) => {
+        const me = socket.uid;
+        const from = d && d.fromUid;
+        if (!me || typeof from !== 'string' || !requestsMap[me]) return;
+        requestsMap[me].delete(from);
+        saveFriendsData();
+        pushFriendsState(me);
+        pushFriendsState(from);
+    });
+
+    socket.on('friend cancel', (d) => {
+        const me = socket.uid;
+        const to = d && d.toUid;
+        if (!me || typeof to !== 'string' || !requestsMap[to]) return;
+        requestsMap[to].delete(me);
+        saveFriendsData();
+        pushFriendsState(me);
+        pushFriendsState(to);
+    });
+
+    socket.on('friend remove', (d) => {
+        const me = socket.uid;
+        const other = d && d.uid;
+        if (!me || typeof other !== 'string') return;
+        if (friendsMap[me]) friendsMap[me].delete(other);
+        if (friendsMap[other]) friendsMap[other].delete(me);
+        saveFriendsData();
+        pushFriendsState(me);
+        pushFriendsState(other);
     });
 
     socket.on('update profile', (p) => {
@@ -202,12 +411,14 @@ io.on('connection', (socket) => {
             io.emit('system-message', `${oldName} ahora se llama ${newName}.`);
         }
         io.emit('update-users', users);
+        syncProfileFromSocket(socket.id);
     });
 
     socket.on('change status', (status) => {
         if (users[socket.id]) {
             users[socket.id].status = status;
             io.emit('update-users', users);
+            if (users[socket.id].uid) notifyFriendsOf(users[socket.id].uid);
         }
     });
 
@@ -238,6 +449,7 @@ io.on('connection', (socket) => {
             const msgData = {
                 id: msgId,
                 senderId: socket.id,
+                senderUid: users[socket.id].uid || null,
                 user: users[socket.id].nickname,
                 avatar: users[socket.id].avatar,
                 color: users[socket.id].color,
@@ -344,6 +556,7 @@ io.on('connection', (socket) => {
                 if (targetSocket) targetSocket.userColor = newColor;
             }
             io.emit('update-users', users);
+            syncProfileFromSocket(targetId);
         }
     });
 
@@ -364,8 +577,16 @@ io.on('connection', (socket) => {
             broadcastTypingStatus();
             recordingUsers.delete(socket.id);
 
+            const leavingUid = users[socket.id].uid;
             delete users[socket.id];
             broadcastRecordingStatus();
+
+            if (leavingUid && onlineByUid[leavingUid] === socket.id) {
+                delete onlineByUid[leavingUid];
+                if (profiles[leavingUid]) profiles[leavingUid].lastSeen = Date.now();
+                if (hasRelations(leavingUid)) saveFriendsData();
+                notifyFriendsOf(leavingUid);
+            }
             io.emit('system-message', `${name} ha salido del chat.`);
             io.emit('update-users', users);
         }
