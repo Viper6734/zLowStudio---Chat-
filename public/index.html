@@ -430,6 +430,13 @@
             display: flex;
             align-items: flex-end;
             gap: 8px;
+            padding: 4px 6px;
+            border-radius: 8px;
+        }
+
+        /* Efecto Hover estilo Discord para resaltar el mensaje */
+        #messages li:hover {
+            background-color: rgba(255, 255, 255, 0.03);
         }
 
         #messages li.sent-msg {
@@ -454,6 +461,16 @@
         #messages li.edited-anim .msg-bubble {
             animation: editPulse 0.4s ease-in-out;
         }
+
+        .msg-content-wrapper {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+        }
+
+        .sent-msg .msg-content-wrapper { align-items: flex-end; }
+        .received-msg .msg-content-wrapper { align-items: flex-start; }
 
         .msg-bubble {
             color: #ffffff;
@@ -507,6 +524,152 @@
             object-fit: cover;
             border: none;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- SISTEMA DE REACCIONES ESTILO DISCORD --- */
+        .message-reactions-bar {
+            display: none;
+            position: absolute;
+            top: -16px;
+            right: 10px;
+            background: #1a1a24;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+            z-index: 50;
+            padding: 2px;
+            gap: 2px;
+            align-items: center;
+        }
+
+        #messages li:hover .message-reactions-bar {
+            display: flex;
+        }
+
+        .react-quick-btn {
+            background: transparent;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+            transition: background 0.15s, transform 0.1s;
+        }
+        .react-quick-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: scale(1.15);
+        }
+
+        /* Contenedor de reacciones debajo del mensaje */
+        .reactions-display-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 5px;
+        }
+
+        .reaction-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .reaction-pill:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent-blue);
+        }
+        .reaction-pill.user-reacted {
+            background: rgba(0, 123, 255, 0.15);
+            border-color: var(--accent-blue);
+        }
+
+        .reaction-avatars-stack {
+            display: flex;
+            align-items: center;
+            margin-left: 2px;
+        }
+
+        .reaction-avatar-mini {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.6rem;
+            font-weight: bold;
+            color: #000;
+            margin-left: -4px;
+            border: 1px solid #111115;
+        }
+        .reaction-avatar-mini:first-child {
+            margin-left: 0;
+        }
+
+        /* Tooltip de Discord para nombres al pasar el mouse sobre la reacción */
+        .reaction-pill::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 115%;
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            background: #000;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.72rem;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.15s ease-out;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+        .reaction-pill:hover::after {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Selector flotante completo para el botón + de reacciones */
+        .reaction-picker-popup {
+            display: none;
+            position: absolute;
+            top: -160px;
+            right: 0;
+            width: 240px;
+            background: #1a1a24;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.8);
+            z-index: 300;
+            padding: 8px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .reaction-picker-popup.show {
+            display: grid;
+            animation: modalFadeIn 0.15s ease-out;
+        }
+        .picker-emoji-opt {
+            font-size: 1.25rem;
+            text-align: center;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+        }
+        .picker-emoji-opt:hover {
+            background: rgba(255,255,255,0.15);
         }
 
         #reply-preview-container {
@@ -623,6 +786,7 @@
             box-shadow: none;
             max-width: 100%;
         }
+        #messages li.system:hover { background: transparent; }
 
         #typing-indicator {
             font-size: 0.8rem;
@@ -663,7 +827,6 @@
             border-color: var(--accent-blue);
         }
 
-        /* Botón '+' pegado a la barra */
         .attach-btn {
             background: transparent;
             border: none;
@@ -692,7 +855,6 @@
             font-size: 0.95rem;
         }
 
-        /* Botón de Emoji al lado del botón de Enviar */
         .emoji-toggle-btn {
             background: transparent;
             border: none;
@@ -721,7 +883,7 @@
             margin-left: 2px;
         }
 
-        /* Pop-up de Selector de Emojis */
+        /* Pop-up de Selector de Emojis general */
         .emoji-picker-popup {
             display: none;
             position: absolute;
@@ -1073,7 +1235,7 @@
                 <button id="cancel-reply-btn" title="Cancelar respuesta">&times;</button>
             </div>
 
-            <!-- Formulario con selector de Emojis al lado izquierdo del botón Send -->
+            <!-- Formulario Grande Unificado -->
             <form id="form" class="chat-form">
                 <div class="mentions-autocomplete" id="mentions-popup"></div>
                 
@@ -1082,12 +1244,11 @@
 
                 <input type="text" id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ o pega una imagen)" />
                 
-                <!-- Botón de Emojis -->
                 <button type="button" class="emoji-toggle-btn" id="emoji-toggle-btn" title="Insertar Emoji">😊</button>
                 
                 <button class="main-btn" id="btn-send">Enviar</button>
 
-                <!-- Pop-up de Emojis -->
+                <!-- Pop-up de Emojis General -->
                 <div class="emoji-picker-popup" id="emoji-picker-popup">
                     <div class="emoji-picker-header">
                         <button type="button" class="emoji-tab-btn active" data-tab="faces">😀 Caras</button>
@@ -1179,10 +1340,9 @@
         let soundType = 'synth';
         let currentStatus = 'online';
 
-        // Lista de Emojis Predeterminados
         const EMOJI_DATABASE = {
             faces: [
-                '😀','😃','😄','😁','😆','😅','😂','🤣','🥲','☺️','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','📁','😳','🤪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃'
+                '😀','😃','😄','😁','😆','😅','😂','🤣','🥲','☺️','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃'
             ],
             people: [
                 '👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦵','🦿','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄','👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👨‍⚕️','👩‍⚕️','👨‍🎓','👩‍🎓','👨‍🏫','👩‍🏫','👨‍⚖️','👩‍⚖️','👨‍🌾','👩‍🌾','👨‍🍳','👩‍🍳','👨‍🔧','👩‍🔧','👨‍🏭','👩‍🏭','👨‍💼','👩‍💼','👨‍🔬','👩‍🔬','👨‍💻','👩‍💻','👨‍🎤','👩‍🎤','👨‍🎨','👩‍🎨','👨‍✈️','👩‍✈️','👨‍🚀','👩‍🚀','👨‍🚒','👩‍🚒','👮','🕵️','💂','🥷','👷','🤴','👸','👳','👲','🧕','🤵','👰','🤰','🤱','👼','🎅','🤶','🦸','🦹','🧙','🧚','🧛','🧜','🧝','🧞','🧟','💆','💇','🚶','🏃','💃','🕺','🕴️','👯','🧖','🧗'
@@ -1619,6 +1779,9 @@
                 mentionsPopup.classList.remove('show');
                 emojiPickerPopup.classList.remove('show');
             }
+            if (!e.target.closest('.message-reactions-bar') && !e.target.closest('.react-quick-btn')) {
+                document.querySelectorAll('.reaction-picker-popup').forEach(p => p.classList.remove('show'));
+            }
         });
 
         function formatMentions(text) {
@@ -1665,30 +1828,81 @@
 
             item.innerHTML = `
                 <div class="user-avatar" style="background-color: ${data.color}">${initial}</div>
-                <div class="msg-bubble ${data.image ? 'has-image' : ''}" style="background-color: ${data.color}">
-                    <div class="msg-info">
-                        <span><strong>${data.user}</strong></span>
-                        <div style="display: flex; align-items: center; gap: 5px;">
-                            <span>${data.time}</span>
-                            <div class="msg-menu-container">
-                                <button class="menu-dots-btn" title="Opciones">⋮</button>
-                                <div class="dropdown-menu">
-                                    <button class="dropdown-item reply-msg-btn">↩️ Responder</button>
-                                    ${showOwnerAdminOpts ? `
-                                        <button class="dropdown-item edit-msg-btn">✏️ Editar</button>
-                                        <button class="dropdown-item delete-opt del-msg-btn">🗑️ Eliminar</button>
-                                    ` : ''}
+                <div class="msg-content-wrapper">
+                    <!-- Barra flotante de reacciones al pasar el mouse (Estilo Discord) -->
+                    <div class="message-reactions-bar">
+                        <button class="react-quick-btn" data-emoji="👍" title="Like">👍</button>
+                        <button class="react-quick-btn" data-emoji="👎" title="Dislike">👎</button>
+                        <button class="react-quick-btn" data-emoji="💩" title="Caca">💩</button>
+                        <button class="react-quick-btn react-more-btn" title="Más emojis">+</button>
+                        
+                        <!-- Pop-up completo para añadir más emojis -->
+                        <div class="reaction-picker-popup"></div>
+                    </div>
+
+                    <div class="msg-bubble ${data.image ? 'has-image' : ''}" style="background-color: ${data.color}">
+                        <div class="msg-info">
+                            <span><strong>${data.user}</strong></span>
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                               <span>${data.time}</span>
+                                <div class="msg-menu-container">
+                                    <button class="menu-dots-btn" title="Opciones">⋮</button>
+                                    <div class="dropdown-menu">
+                                        <button class="dropdown-item reply-msg-btn">↩️ Responder</button>
+                                        ${showOwnerAdminOpts ? `
+                                            <button class="dropdown-item edit-msg-btn">✏️ Editar</button>
+                                            <button class="dropdown-item delete-opt del-msg-btn">🗑️ Eliminar</button>
+                                        ` : ''}
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        ${replyHtml}
+                        <div class="msg-text-container">
+                            ${formattedMessageText ? `<span class="msg-text-content">${formattedMessageText}</span>` : ''}
+                            ${imageHtml}
+                        </div>
                     </div>
-                    ${replyHtml}
-                    <div class="msg-text-container">
-                        ${formattedMessageText ? `<span class="msg-text-content">${formattedMessageText}</span>` : ''}
-                        ${imageHtml}
-                    </div>
+
+                    <!-- Contenedor donde se muestran las reacciones activas con avatares -->
+                    <div class="reactions-display-container"></div>
                 </div>
             `;
+
+            // Configurar barra de reacciones flotante
+            const quickBtns = item.querySelectorAll('.react-quick-btn:not(.react-more-btn)');
+            quickBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    socket.emit('add reaction', { msgId: data.id, emoji: btn.dataset.emoji });
+                });
+            });
+
+            const moreBtn = item.querySelector('.react-more-btn');
+            const pickerPopup = item.querySelector('.reaction-picker-popup');
+            
+            moreBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Ocultar otros pickers abiertos
+                document.querySelectorAll('.reaction-picker-popup').forEach(p => {
+                    if (p !== pickerPopup) p.classList.remove('show');
+                });
+                pickerPopup.classList.toggle('show');
+
+                if (pickerPopup.classList.contains('show') && pickerPopup.children.length === 0) {
+                    // Llenar con todos los emojis disponibles
+                    const allEmojis = [...EMOJI_DATABASE.faces, ...EMOJI_DATABASE.people];
+                    allEmojis.forEach(emoji => {
+                        const opt = document.createElement('span');
+                        opt.className = 'picker-emoji-opt';
+                        opt.textContent = emoji;
+                        opt.addEventListener('click', () => {
+                            socket.emit('add reaction', { msgId: data.id, emoji: emoji });
+                            pickerPopup.classList.remove('show');
+                        });
+                        pickerPopup.appendChild(opt);
+                    });
+                }
+            });
 
             const dotsBtn = item.querySelector('.menu-dots-btn');
             const menuDropdown = item.querySelector('.dropdown-menu');
@@ -1733,13 +1947,65 @@
             }
 
             const isScrolledToBottom = messages.scrollHeight - messages.clientHeight <= messages.scrollTop + 100;
-
             messages.appendChild(item);
 
             if (isScrolledToBottom || isMe) {
                 messages.scrollTop = messages.scrollHeight;
             }
+
+            // Renderizar reacciones iniciales si las hubiera
+            if (data.reactions) {
+                updateMessageReactions(data.id, data.reactions);
+            }
         });
+
+        // Evento socket para actualizar reacciones en tiempo real
+        socket.on('update reactions', ({ msgId, reactions }) => {
+            updateMessageReactions(msgId, reactions);
+        });
+
+        function updateMessageReactions(msgId, reactions) {
+            const item = document.getElementById(msgId);
+            if (!item) return;
+            const container = item.querySelector('.reactions-display-container');
+            container.innerHTML = '';
+
+            Object.entries(reactions).forEach(([emoji, usersList]) => {
+                if (!usersList || usersList.length === 0) return;
+
+                const pill = document.createElement('div');
+                pill.className = 'reaction-pill';
+
+                // Comprobar si el usuario actual reaccionó con este emoji
+                const userReacted = usersList.some(u => u.id === socket.id);
+                if (userReacted) pill.classList.add('user-reacted');
+
+                // Crear lista de nombres para el tooltip al pasar el mouse
+                const namesString = usersList.map(u => u.nickname).join(', ');
+                pill.setAttribute('data-tooltip', namesString);
+
+                // Renderizar avatares en miniatura apilados (Estilo Discord)
+                let avatarsHtml = '<div class="reaction-avatars-stack">';
+                usersList.slice(0, 3).forEach(u => {
+                    const initial = u.nickname ? u.nickname.charAt(0).toUpperCase() : '?';
+                    avatarsHtml += `<div class="reaction-avatar-mini" style="background-color: ${u.color};" title="${u.nickname}">${initial}</div>`;
+                });
+                avatarsHtml += '</div>';
+
+                pill.innerHTML = `
+                    <span>${emoji}</span>
+                    <span style="font-size: 0.75rem; font-weight: bold; margin-left: 2px;">${usersList.length}</span>
+                    ${avatarsHtml}
+                `;
+
+                // Permitir quitar/poner reacción al hacer clic en la pastilla
+                pill.addEventListener('click', () => {
+                    socket.emit('add reaction', { msgId, emoji });
+                });
+
+                container.appendChild(pill);
+            });
+        }
 
         socket.on('message deleted', (msgId) => {
             const targetItem = document.getElementById(msgId);
