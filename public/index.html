@@ -1237,6 +1237,216 @@
         }
         .emoji-item:hover { background: var(--hover-bg); }
 
+        /* --- SISTEMA DE AMIGOS (adaptado al tema) --- */
+        .chat-container { max-width: 1240px; }
+
+        .friends-sidebar {
+            width: 240px;
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            padding: 16px 12px;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .friends-sidebar.collapsed {
+            width: 0 !important;
+            padding: 0 !important;
+            overflow: hidden !important;
+            border-right: none !important;
+        }
+        .friends-header {
+            padding: 0 6px 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .friends-header h3 { font-size: 0.9rem; color: var(--text-sub); text-transform: uppercase; }
+        #friends-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            overflow-y: auto;
+            margin-top: 6px;
+        }
+        .friends-group-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-sub);
+            padding: 12px 8px 4px;
+        }
+        .friend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .friend-item:hover { background: var(--hover-bg); }
+        .friend-avatar { position: relative; width: 36px; height: 36px; flex-shrink: 0; }
+        .friend-avatar .user-avatar { width: 36px; height: 36px; }
+        .friend-avatar .status-icon {
+            position: absolute;
+            right: -3px;
+            bottom: -3px;
+            width: 15px;
+            height: 15px;
+            border: 3px solid var(--bg-sidebar);
+            box-sizing: border-box;
+            box-shadow: none;
+        }
+        .friend-avatar .status-icon.dnd::after { top: 50%; left: 50%; width: 6px; margin: -1px 0 0 -3px; }
+        .friend-item.is-offline .user-avatar { opacity: 0.55; filter: grayscale(0.4); }
+        .friend-item.is-offline .friend-name { color: var(--text-sub); }
+        .friend-text { min-width: 0; display: flex; flex-direction: column; }
+        .friend-name {
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .friend-sub { font-size: 0.72rem; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .friends-empty { padding: 18px 8px; font-size: 0.8rem; line-height: 1.45; color: var(--text-sub); text-align: center; }
+
+        @media (max-width: 900px) {
+            .friends-sidebar:not(.collapsed) {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 400;
+                box-shadow: 8px 0 24px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        /* Campanita de solicitudes */
+        .bell-wrap { position: relative; display: inline-block; }
+        .bell-btn {
+            position: relative;
+            width: 40px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            cursor: pointer;
+            outline: none;
+        }
+        .bell-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        .bell-btn:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+        .bell-btn.ring svg { animation: bellShake 0.9s ease-in-out; transform-origin: 50% 10%; }
+        @keyframes bellShake {
+            0%, 100% { transform: rotate(0); }
+            15% { transform: rotate(18deg); }
+            30% { transform: rotate(-16deg); }
+            45% { transform: rotate(12deg); }
+            60% { transform: rotate(-9deg); }
+            75% { transform: rotate(5deg); }
+        }
+        .bell-badge {
+            position: absolute;
+            top: -9px;
+            right: -9px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            border-radius: 9px;
+            background: #ff4757;
+            color: #ffffff;
+            font-size: 0.65rem;
+            font-weight: 800;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--bg-container);
+            box-sizing: content-box;
+        }
+        .requests-panel {
+            display: none;
+            position: absolute;
+            top: 125%;
+            left: 0;
+            width: 310px;
+            max-width: 85vw;
+            background: var(--bg-modal);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 18px var(--glow-color);
+            z-index: 350;
+            overflow: hidden;
+            font-weight: 400;
+        }
+        .requests-panel.show { display: block; animation: modalFadeIn 0.15s ease-out; }
+        .requests-title {
+            padding: 10px 14px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-sub);
+            border-bottom: 1px solid var(--border-color);
+            background: var(--hover-bg);
+        }
+        .requests-list { max-height: 300px; overflow-y: auto; }
+        .request-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+        .request-row + .request-row { border-top: 1px solid var(--border-color); }
+        .request-row .user-avatar { width: 36px; height: 36px; cursor: pointer; }
+        .request-info { flex: 1; min-width: 0; cursor: pointer; }
+        .request-name { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .request-sub { font-size: 0.72rem; color: var(--text-sub); }
+        .req-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #ffffff;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: transform 0.15s, filter 0.15s;
+        }
+        .req-btn.accept { background: #2ed573; }
+        .req-btn.reject { background: #ff4757; }
+        .req-btn:hover { filter: brightness(1.12); transform: scale(1.1); }
+        .requests-empty { padding: 24px 14px; text-align: center; font-size: 0.85rem; color: var(--text-sub); }
+
+        .profile-actions { flex-wrap: wrap; }
+        .profile-actions .profile-btn { flex: 1 1 40%; }
+        .profile-btn.danger:hover { color: #ff4757; border-color: #ff4757; }
+
+        .mini-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 90px;
+            transform: translate(-50%, 20px);
+            max-width: 90vw;
+            padding: 10px 18px;
+            border-radius: 12px;
+            background: var(--bg-modal);
+            color: var(--text-main);
+            border: 1px solid var(--accent-blue);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px var(--glow-color);
+            font-size: 0.88rem;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            z-index: 2000;
+        }
+        .mini-toast.show { opacity: 1; transform: translate(-50%, 0); }
+
         /* --- PERFIL DE USUARIO (adaptado al tema) --- */
         .modal-overlay.profile-overlay { background: rgba(0, 0, 0, 0.62); backdrop-filter: blur(6px); }
 
@@ -2142,6 +2352,8 @@
         </div>
     </div>
 
+    <div class="mini-toast" id="mini-toast"></div>
+
     <!-- PERFIL DE USUARIO -->
     <div id="profile-modal" class="modal-overlay profile-overlay" style="display: none;">
         <div class="profile-card" id="profile-card"></div>
@@ -2202,6 +2414,13 @@
 
     <!-- Interface Principal del Chat -->
     <div class="chat-container">
+        <!-- AMIGOS (lado izquierdo) -->
+        <aside class="friends-sidebar" id="friends-sidebar">
+            <div class="friends-header"><h3>Amigos (<span id="friends-count">0</span>)</h3></div>
+            <ul id="friends-list"></ul>
+            <div class="friends-empty" id="friends-empty">Aún no tienes amigos. Haz clic en la foto de alguien y pulsa "Agregar amigo".</div>
+        </aside>
+
         <div class="chat-main">
             <div class="chat-header">
                 <div class="header-title">
@@ -2232,8 +2451,19 @@
                             </button>
                         </div>
                     </div>
+                    <div class="bell-wrap" id="bell-wrap">
+                        <button type="button" class="bell-btn" id="bell-btn" title="Solicitudes de amistad">
+                            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                            <span class="bell-badge" id="bell-badge">0</span>
+                        </button>
+                        <div class="requests-panel" id="requests-panel">
+                            <div class="requests-title">Solicitudes de amistad</div>
+                            <div class="requests-list" id="requests-list"></div>
+                        </div>
+                    </div>
                 </div>
                 <div class="header-actions">
+                    <button class="action-icon-btn" id="toggle-friends-btn" title="Mostrar/Ocultar Amigos">🤝</button>
                     <button class="action-icon-btn" id="toggle-sidebar-btn" title="Mostrar/Ocultar Conectados">👥</button>
                     <button class="action-icon-btn" id="open-settings-btn" title="Settings">⚙️</button>
                 </div>
@@ -2910,6 +3140,7 @@
             localStorage.removeItem('chat_avatar');
             localStorage.removeItem('chat_bio');
             localStorage.removeItem('chat_member_since');
+            localStorage.removeItem('chat_token');
             window.location.reload();
         });
 
@@ -2926,7 +3157,12 @@
                 myMemberSince = Date.now();
                 try { localStorage.setItem('chat_member_since', String(myMemberSince)); } catch (e) {}
             }
-            return { nickname: myNickname, avatar: myAvatarBase64, bio: myBio, memberSince: myMemberSince };
+            let token = localStorage.getItem('chat_token');
+            if (!token) {
+                token = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2));
+                try { localStorage.setItem('chat_token', token); } catch (e) {}
+            }
+            return { nickname: myNickname, avatar: myAvatarBase64, bio: myBio, memberSince: myMemberSince, token: token };
         }
 
         function resizeAvatar(file, size) {
@@ -2987,16 +3223,25 @@
 
         function closeProfile() { profileModal.style.display = 'none'; }
 
+        let profileCtx = null;
+
         function openProfile(userId, fallback) {
-            const live = currentUsersData[userId];
+            profileCtx = { userId: userId, fallback: fallback };
+            const live = userId ? currentUsersData[userId] : null;
+            const fb = fallback || {};
             const p = live || {
-                nickname: (fallback && fallback.user) || 'Usuario',
-                avatar: (fallback && fallback.avatar) || null,
-                color: (fallback && fallback.color) || '#888888',
-                status: 'offline'
+                nickname: fb.nickname || fb.user || 'Usuario',
+                avatar: fb.avatar || null,
+                color: fb.color || '#888888',
+                status: fb.status || 'offline',
+                bio: fb.bio || '',
+                memberSince: fb.memberSince || 0,
+                lastSeen: fb.lastSeen || 0,
+                isFirst: false
             };
-            const isSelf = userId === socket.id;
-            const status = live ? (p.status || 'online') : 'offline';
+            const uid = (live && live.uid) || fb.uid || null;
+            const isSelf = (!!userId && userId === socket.id) || (!!uid && uid === myUid);
+            const status = live ? (p.status || 'online') : (fb.status || 'offline');
             const color = safeColor(p.color);
 
             profileCard.style.setProperty('--pc', color);
@@ -3011,6 +3256,7 @@
                     </div>
                     <div class="profile-chips">
                         <span class="profile-chip founder">👑 Fundador</span>
+                        <span class="profile-chip friend-chip">🤝 Amigos</span>
                         <span class="profile-chip"><span class="status-icon ${status}"></span><span class="st-text"></span></span>
                     </div>
                     <div class="profile-divider"></div>
@@ -3023,11 +3269,14 @@
                 </div>
             `;
 
+            const rel = (uid && !isSelf) ? friendRelation(uid) : 'none';
+
             const nameEl = profileCard.querySelector('.profile-name');
             nameEl.textContent = p.nickname;
             nameEl.style.color = color;
             if (!isSelf) profileCard.querySelector('.profile-chip.you').style.display = 'none';
             if (!p.isFirst) profileCard.querySelector('.profile-chip.founder').style.display = 'none';
+            if (rel !== 'friends') profileCard.querySelector('.friend-chip').style.display = 'none';
             profileCard.querySelector('.st-text').textContent = STATUS_LABELS[status] || STATUS_LABELS.online;
 
             const avatarEl = makeAvatarEl(p, 'profile-avatar-img');
@@ -3038,36 +3287,61 @@
             if (p.bio) { bioEl.textContent = p.bio; } else { bioEl.textContent = 'Sin descripción.'; bioEl.classList.add('muted'); }
 
             profileCard.querySelector('.pf-since').textContent = fmtDate(p.memberSince);
-            profileCard.querySelector('.pf-conn').textContent = live && p.connectedAt
-                ? `${new Date(p.connectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${fmtAgo(p.connectedAt)}`
-                : 'Desconectado';
+            const connEl = profileCard.querySelector('.pf-conn');
+            if (live && status !== 'offline' && p.connectedAt) {
+                connEl.textContent = `${new Date(p.connectedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${fmtAgo(p.connectedAt)}`;
+            } else if (p.lastSeen) {
+                connEl.textContent = 'Visto ' + fmtAgo(p.lastSeen);
+            } else {
+                connEl.textContent = 'Desconectado';
+            }
 
             const actions = profileCard.querySelector('.profile-actions');
+            const mk = (cls, text, fn, title) => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'profile-btn ' + cls;
+                b.textContent = text;
+                if (title) b.title = title;
+                if (fn) b.addEventListener('click', fn); else b.disabled = true;
+                return b;
+            };
+
             if (isSelf) {
-                const editBtn = document.createElement('button');
-                editBtn.type = 'button';
-                editBtn.className = 'profile-btn primary';
-                editBtn.textContent = '✏️ Editar perfil';
-                editBtn.addEventListener('click', () => { closeProfile(); openProfileEdit(); });
-                actions.appendChild(editBtn);
+                actions.appendChild(mk('primary', '✏️ Editar perfil', () => { closeProfile(); openProfileEdit(); }));
             } else {
-                ['🤝 Agregar amigo', '💬 Mensaje privado'].forEach(label => {
-                    const b = document.createElement('button');
-                    b.type = 'button';
-                    b.className = 'profile-btn soon';
-                    b.textContent = label;
-                    b.disabled = true;
-                    b.title = 'Próximamente';
-                    actions.appendChild(b);
-                });
+                if (!uid) {
+                    actions.appendChild(mk('soon', '🤝 Agregar amigo', null, 'No disponible para este usuario'));
+                } else if (rel === 'none') {
+                    actions.appendChild(mk('primary', '🤝 Agregar amigo', () => socket.emit('friend request', { toUid: uid })));
+                } else if (rel === 'outgoing') {
+                    actions.appendChild(mk('soon', '⏳ Solicitud enviada', null, 'Esperando respuesta'));
+                    actions.appendChild(mk('', 'Cancelar', () => socket.emit('friend cancel', { toUid: uid })));
+                } else if (rel === 'incoming') {
+                    actions.appendChild(mk('primary', '✓ Aceptar', () => socket.emit('friend accept', { fromUid: uid })));
+                    actions.appendChild(mk('danger', '✕ Rechazar', () => socket.emit('friend decline', { fromUid: uid })));
+                } else {
+                    actions.appendChild(mk('soon', '✔ Son amigos', null, 'Ya son amigos'));
+                    actions.appendChild(mk('danger', 'Eliminar amigo', () => {
+                        if (confirm(`¿Eliminar a ${p.nickname} de tus amigos?`)) socket.emit('friend remove', { uid: uid });
+                    }));
+                }
+                actions.appendChild(mk('soon', '💬 Mensaje privado', null, 'Próximamente'));
+
                 const note = document.createElement('div');
                 note.className = 'profile-soon-note';
-                note.textContent = 'Amigos y chat privado: próximamente';
+                note.textContent = 'Chat privado: próximamente';
                 actions.parentNode.appendChild(note);
             }
 
             profileCard.querySelector('.profile-close').addEventListener('click', closeProfile);
             profileModal.style.display = 'flex';
+        }
+
+        // Abre el perfil de alguien conocido solo por su uid (amigos, solicitudes)
+        function openProfileByUid(uid, data) {
+            const entry = Object.entries(currentUsersData).find(([, u]) => u.uid === uid);
+            openProfile(entry ? entry[0] : null, Object.assign({}, data, { uid: uid }));
         }
 
         profileModal.addEventListener('click', (e) => { if (e.target === profileModal) closeProfile(); });
@@ -3079,6 +3353,7 @@
             const li = av.closest('#messages > li');
             if (!li || !li.dataset.senderId) return;
             openProfile(li.dataset.senderId, {
+                uid: li.dataset.senderUid,
                 user: li.dataset.userName,
                 color: li.dataset.userColor,
                 avatar: av.tagName === 'IMG' ? av.src : null
@@ -3190,6 +3465,195 @@
                 });
             });
         }
+
+        // ====== AMIGOS ======
+        let friendsState = { friends: [], incoming: [], outgoing: [] };
+        let myUid = null;
+        let friendsStateReady = false;
+
+        const friendsSidebar = document.getElementById('friends-sidebar');
+        const friendsList = document.getElementById('friends-list');
+        const friendsCount = document.getElementById('friends-count');
+        const friendsEmpty = document.getElementById('friends-empty');
+        const toggleFriendsBtn = document.getElementById('toggle-friends-btn');
+        const bellBtn = document.getElementById('bell-btn');
+        const bellBadge = document.getElementById('bell-badge');
+        const requestsPanel = document.getElementById('requests-panel');
+        const requestsList = document.getElementById('requests-list');
+        const miniToast = document.getElementById('mini-toast');
+        let toastTimer = null;
+
+        function showToast(text) {
+            miniToast.textContent = text;
+            miniToast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => miniToast.classList.remove('show'), 3800);
+        }
+
+        function friendRelation(uid) {
+            if (friendsState.friends.some(f => f.uid === uid)) return 'friends';
+            if (friendsState.incoming.some(r => r.uid === uid)) return 'incoming';
+            if (friendsState.outgoing.indexOf(uid) !== -1) return 'outgoing';
+            return 'none';
+        }
+
+        function renderFriends() {
+            friendsList.innerHTML = '';
+            const all = friendsState.friends.slice();
+            friendsCount.textContent = all.length;
+            friendsEmpty.style.display = all.length ? 'none' : 'block';
+
+            const byName = (a, b) => a.nickname.localeCompare(b.nickname);
+            const online = all.filter(f => f.status !== 'offline').sort(byName);
+            const offline = all.filter(f => f.status === 'offline').sort(byName);
+
+            const addGroup = (label, arr) => {
+                if (!arr.length) return;
+                const lab = document.createElement('li');
+                lab.className = 'friends-group-label';
+                lab.textContent = `${label} — ${arr.length}`;
+                friendsList.appendChild(lab);
+
+                arr.forEach(f => {
+                    const li = document.createElement('li');
+                    li.className = 'friend-item' + (f.status === 'offline' ? ' is-offline' : '');
+
+                    const av = document.createElement('div');
+                    av.className = 'friend-avatar';
+                    av.appendChild(makeAvatarEl(f, 'user-avatar'));
+                    const dot = document.createElement('span');
+                    dot.className = 'status-icon ' + (f.status || 'offline');
+                    av.appendChild(dot);
+
+                    const txt = document.createElement('div');
+                    txt.className = 'friend-text';
+                    const nm = document.createElement('span');
+                    nm.className = 'friend-name';
+                    nm.textContent = f.nickname;
+                    const sub = document.createElement('span');
+                    sub.className = 'friend-sub';
+                    sub.textContent = f.status === 'offline'
+                        ? (f.lastSeen ? 'Visto ' + fmtAgo(f.lastSeen) : 'Desconectado')
+                        : (STATUS_LABELS[f.status] || 'En línea');
+                    txt.appendChild(nm);
+                    txt.appendChild(sub);
+
+                    li.appendChild(av);
+                    li.appendChild(txt);
+                    li.addEventListener('click', () => openProfileByUid(f.uid, f));
+                    friendsList.appendChild(li);
+                });
+            };
+            addGroup('En línea', online);
+            addGroup('Desconectados', offline);
+        }
+
+        function renderRequests() {
+            const list = friendsState.incoming;
+            bellBadge.textContent = list.length > 9 ? '9+' : String(list.length);
+            bellBadge.style.display = list.length ? 'flex' : 'none';
+            requestsList.innerHTML = '';
+
+            if (!list.length) {
+                const empty = document.createElement('div');
+                empty.className = 'requests-empty';
+                empty.textContent = 'No tienes solicitudes pendientes.';
+                requestsList.appendChild(empty);
+                return;
+            }
+
+            list.forEach(r => {
+                const row = document.createElement('div');
+                row.className = 'request-row';
+
+                const av = makeAvatarEl(r, 'user-avatar');
+                const info = document.createElement('div');
+                info.className = 'request-info';
+                const nm = document.createElement('div');
+                nm.className = 'request-name';
+                nm.textContent = r.nickname;
+                nm.style.color = safeColor(r.color);
+                const sub = document.createElement('div');
+                sub.className = 'request-sub';
+                sub.textContent = 'quiere ser tu amigo';
+                info.appendChild(nm);
+                info.appendChild(sub);
+
+                const open = () => { requestsPanel.classList.remove('show'); openProfileByUid(r.uid, r); };
+                av.addEventListener('click', open);
+                info.addEventListener('click', open);
+
+                const ok = document.createElement('button');
+                ok.type = 'button';
+                ok.className = 'req-btn accept';
+                ok.title = 'Aceptar';
+                ok.textContent = '✓';
+                ok.addEventListener('click', () => socket.emit('friend accept', { fromUid: r.uid }));
+
+                const no = document.createElement('button');
+                no.type = 'button';
+                no.className = 'req-btn reject';
+                no.title = 'Rechazar';
+                no.textContent = '✕';
+                no.addEventListener('click', () => socket.emit('friend decline', { fromUid: r.uid }));
+
+                row.appendChild(av);
+                row.appendChild(info);
+                row.appendChild(ok);
+                row.appendChild(no);
+                requestsList.appendChild(row);
+            });
+        }
+
+        socket.on('friends state', (st) => {
+            const prevCount = friendsState.incoming.length;
+            friendsState = {
+                friends: st.friends || [],
+                incoming: st.incoming || [],
+                outgoing: st.outgoing || []
+            };
+            if (st.me) myUid = st.me;
+
+            renderFriends();
+            renderRequests();
+
+            if (friendsState.incoming.length > prevCount) {
+                bellBtn.classList.remove('ring');
+                void bellBtn.offsetWidth;
+                bellBtn.classList.add('ring');
+                if (friendsStateReady) { try { playMessageSound(); } catch (e) {} }
+            }
+            friendsStateReady = true;
+
+            // Si hay un perfil abierto, se actualizan sus botones al instante
+            if (profileModal.style.display === 'flex' && profileCtx) {
+                openProfile(profileCtx.userId, profileCtx.fallback);
+            }
+        });
+
+        socket.on('friend notice', (n) => { if (n && n.text) showToast(n.text); });
+
+        bellBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            requestsPanel.classList.toggle('show');
+        });
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#bell-wrap')) requestsPanel.classList.remove('show');
+        });
+
+        // Panel izquierdo de amigos (se recuerda si lo ocultaste)
+        (function initFriendsSidebar() {
+            const saved = localStorage.getItem('chat_friends_collapsed');
+            const collapsed = saved === null ? window.innerWidth < 900 : saved === 'true';
+            if (collapsed) friendsSidebar.classList.add('collapsed');
+        })();
+        toggleFriendsBtn.addEventListener('click', () => {
+            friendsSidebar.classList.toggle('collapsed');
+            try { localStorage.setItem('chat_friends_collapsed', friendsSidebar.classList.contains('collapsed')); } catch (e) {}
+        });
+
+        renderFriends();
+        renderRequests();
 
         // ====== SELECTOR DE GIFS ======
         const gifToggleBtn = document.getElementById('gif-toggle-btn');
@@ -3810,6 +4274,7 @@
             item.dataset.senderId = data.senderId;
             item.dataset.userName = data.user || '';
             item.dataset.userColor = data.color || '';
+            item.dataset.senderUid = data.senderUid || '';
 
             const isMe = (data.senderId === socket.id);
             item.className = isMe ? 'sent-msg' : 'received-msg';
