@@ -465,6 +465,10 @@
             max-width: 100%;
         }
 
+        .msg-bubble.has-image {
+            padding: 10px;
+        }
+
         .sent-msg .msg-bubble { border-bottom-right-radius: 2px; }
         .received-msg .msg-bubble { border-bottom-left-radius: 2px; }
 
@@ -493,16 +497,16 @@
             margin-bottom: 2px;
         }
 
-        /* Imagen integrada en el mensaje */
         .msg-image {
-            max-width: 240px;
-            max-height: 200px;
+            max-width: 280px;
+            max-height: 260px;
             border-radius: 8px;
             margin-top: 6px;
             display: block;
             cursor: pointer;
             object-fit: cover;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
 
         #reply-preview-container {
@@ -641,54 +645,147 @@
         .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
         .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
 
+        /* Contenedor Unificado Grande de la Barra de Entrada */
         .chat-form {
             display: flex;
-            gap: 10px;
+            gap: 0;
             margin-top: 5px;
             position: relative;
             align-items: center;
-        }
-
-        /* Botón de signo de más (+) para adjuntar imagen */
-        .attach-btn {
             background: var(--bg-input);
             border: 1px solid var(--border-color);
-            color: var(--text-main);
-            width: 42px;
-            height: 42px;
-            border-radius: 8px;
+            border-radius: 10px;
+            padding: 4px;
+            transition: border-color 0.2s;
+        }
+
+        .chat-form:focus-within {
+            border-color: var(--accent-blue);
+        }
+
+        /* Botón '+' pegado a la barra */
+        .attach-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            width: 38px;
+            height: 38px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             font-weight: bold;
             cursor: pointer;
             flex-shrink: 0;
-            transition: all 0.2s;
+            transition: color 0.2s;
+            outline: none;
         }
-        .attach-btn:hover {
-            border-color: var(--accent-blue);
-            background: rgba(255, 255, 255, 0.05);
-        }
+        .attach-btn:hover { color: var(--text-main); }
 
         .chat-form input[type="text"] {
             flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-input);
+            padding: 10px 12px;
+            border: none;
+            background: transparent;
             color: var(--text-main);
             outline: none;
+            font-size: 0.95rem;
+        }
+
+        /* Botón de Emoji al lado del botón de Enviar */
+        .emoji-toggle-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.75;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .emoji-toggle-btn:hover {
+            opacity: 1;
+            transform: scale(1.1);
         }
 
         .chat-form button.main-btn {
-            padding: 12px 24px;
+            padding: 10px 20px;
             border: none;
             border-radius: 8px;
             background: var(--accent-blue);
             color: white;
             font-weight: bold;
             cursor: pointer;
+            margin-left: 2px;
+        }
+
+        /* Pop-up de Selector de Emojis */
+        .emoji-picker-popup {
+            display: none;
+            position: absolute;
+            bottom: 110%;
+            right: 0;
+            width: 310px;
+            height: 250px;
+            background: #1a1a24;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+            z-index: 500;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .emoji-picker-popup.show {
+            display: flex;
+            animation: modalFadeIn 0.15s ease-out;
+        }
+
+        .emoji-picker-header {
+            display: flex;
+            background: rgba(255, 255, 255, 0.04);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .emoji-tab-btn {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .emoji-tab-btn.active {
+            color: var(--text-main);
+            border-bottom: 2px solid var(--accent-blue);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .emoji-grid-container {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            align-content: start;
+        }
+
+        .emoji-item {
+            font-size: 1.25rem;
+            cursor: pointer;
+            text-align: center;
+            padding: 4px;
+            border-radius: 6px;
+            user-select: none;
+            transition: background 0.15s;
+        }
+        .emoji-item:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .mentions-autocomplete {
@@ -976,18 +1073,28 @@
                 <button id="cancel-reply-btn" title="Cancelar respuesta">&times;</button>
             </div>
 
-            <!-- Formulario con botón de Cargar Imagen (+) -->
+            <!-- Formulario con selector de Emojis al lado izquierdo del botón Send -->
             <form id="form" class="chat-form">
                 <div class="mentions-autocomplete" id="mentions-popup"></div>
                 
-                <!-- Input de archivo oculto para la imagen -->
                 <input type="file" id="image-file-input" accept="image/png, image/jpeg" style="display: none;" />
-                
-                <!-- Botón de signo de más (+) en la esquina izquierda -->
-                <button type="button" class="attach-btn" id="attach-btn" title="Cargar imagen">+</button>
+                <button type="button" class="attach-btn" id="attach-btn" title="Cargar o pegar imagen">+</button>
 
-                <input id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ para mencionar)" />
-                <button class="main-btn" id="btn-send" style="width: auto;">Enviar</button>
+                <input type="text" id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ o pega una imagen)" />
+                
+                <!-- Botón de Emojis -->
+                <button type="button" class="emoji-toggle-btn" id="emoji-toggle-btn" title="Insertar Emoji">😊</button>
+                
+                <button class="main-btn" id="btn-send">Enviar</button>
+
+                <!-- Pop-up de Emojis -->
+                <div class="emoji-picker-popup" id="emoji-picker-popup">
+                    <div class="emoji-picker-header">
+                        <button type="button" class="emoji-tab-btn active" data-tab="faces">😀 Caras</button>
+                        <button type="button" class="emoji-tab-btn" data-tab="people">🧑 Personas</button>
+                    </div>
+                    <div class="emoji-grid-container" id="emoji-grid"></div>
+                </div>
             </form>
         </div>
 
@@ -1057,6 +1164,11 @@
         const attachBtn = document.getElementById('attach-btn');
         const imageFileInput = document.getElementById('image-file-input');
 
+        const emojiToggleBtn = document.getElementById('emoji-toggle-btn');
+        const emojiPickerPopup = document.getElementById('emoji-picker-popup');
+        const emojiGrid = document.getElementById('emoji-grid');
+        const emojiTabBtns = document.querySelectorAll('.emoji-tab-btn');
+
         let myNickname = '';
         let isAdmin = false;
         let currentUsersData = {};
@@ -1066,6 +1178,57 @@
         let typingTimeout = null;
         let soundType = 'synth';
         let currentStatus = 'online';
+
+        // Lista de Emojis Predeterminados
+        const EMOJI_DATABASE = {
+            faces: [
+                '😀','😃','😄','😁','😆','😅','😂','🤣','🥲','☺️','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','📁','😳','🤪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃'
+            ],
+            people: [
+                '👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦵','🦿','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄','👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷','👨‍⚕️','👩‍⚕️','👨‍🎓','👩‍🎓','👨‍🏫','👩‍🏫','👨‍⚖️','👩‍⚖️','👨‍🌾','👩‍🌾','👨‍🍳','👩‍🍳','👨‍🔧','👩‍🔧','👨‍🏭','👩‍🏭','👨‍💼','👩‍💼','👨‍🔬','👩‍🔬','👨‍💻','👩‍💻','👨‍🎤','👩‍🎤','👨‍🎨','👩‍🎨','👨‍✈️','👩‍✈️','👨‍🚀','👩‍🚀','👨‍🚒','👩‍🚒','👮','🕵️','💂','🥷','👷','🤴','👸','👳','👲','🧕','🤵','👰','🤰','🤱','👼','🎅','🤶','🦸','🦹','🧙','🧚','🧛','🧜','🧝','🧞','🧟','💆','💇','🚶','🏃','💃','🕺','🕴️','👯','🧖','🧗'
+            ]
+        };
+
+        function renderEmojiGrid(category) {
+            emojiGrid.innerHTML = '';
+            const list = EMOJI_DATABASE[category] || EMOJI_DATABASE.faces;
+            list.forEach(emoji => {
+                const span = document.createElement('span');
+                span.className = 'emoji-item';
+                span.textContent = emoji;
+                span.addEventListener('click', () => {
+                    insertEmoji(emoji);
+                });
+                emojiGrid.appendChild(span);
+            });
+        }
+
+        function insertEmoji(emoji) {
+            const startPos = input.selectionStart;
+            const endPos = input.selectionEnd;
+            const currentValue = input.value;
+
+            input.value = currentValue.substring(0, startPos) + emoji + currentValue.substring(endPos);
+            input.selectionStart = input.selectionEnd = startPos + emoji.length;
+            input.focus();
+        }
+
+        emojiToggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            emojiPickerPopup.classList.toggle('show');
+            if (emojiPickerPopup.classList.contains('show')) {
+                renderEmojiGrid('faces');
+            }
+        });
+
+        emojiTabBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                emojiTabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderEmojiGrid(btn.dataset.tab);
+            });
+        });
 
         function saveSettings(key, val) {
             localStorage.setItem('chat_' + key, val);
@@ -1223,7 +1386,7 @@
                 document.getElementById('st-label-sound').textContent = 'Notification Sound';
                 document.getElementById('close-settings-btn').textContent = 'Save & Close';
                 document.getElementById('btn-send').textContent = 'Send';
-                input.placeholder = 'Type a message... (Use @ to mention)';
+                input.placeholder = 'Type a message... (Use @ or paste image)';
                 document.getElementById('join-title').textContent = 'Join Chat';
                 joinBtn.textContent = 'Enter';
             } else {
@@ -1233,7 +1396,7 @@
                 document.getElementById('st-label-sound').textContent = 'Sonido de Notificación';
                 document.getElementById('close-settings-btn').textContent = 'Guardar y Cerrar';
                 document.getElementById('btn-send').textContent = 'Enviar';
-                input.placeholder = 'Escribe un mensaje... (Usa @ para mencionar)';
+                input.placeholder = 'Escribe un mensaje... (Usa @ o pega una imagen)';
                 document.getElementById('join-title').textContent = 'Ingresa al Chat';
                 joinBtn.textContent = 'Entrar';
             }
@@ -1254,40 +1417,49 @@
             playMessageSound();
         }));
 
-        // Botón de (+) para abrir selector de archivos de imagen
         attachBtn.addEventListener('click', () => {
             imageFileInput.click();
         });
 
-        // Al seleccionar imagen, convertir a Base64 y enviarla inmediatamente
+        function sendImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const base64Image = event.target.result;
+                const now = new Date();
+                const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                socket.emit('chat message', {
+                    text: input.value.trim(),
+                    image: base64Image,
+                    time: timeStr,
+                    replyTo: replyingTo
+                });
+
+                input.value = '';
+                imageFileInput.value = '';
+                replyingTo = null;
+                replyPreviewContainer.style.display = 'none';
+                emojiPickerPopup.classList.remove('show');
+                socket.emit('typing', false);
+            };
+            reader.readAsDataURL(file);
+        }
+
         imageFileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                if (!file.type.startsWith('image/')) {
-                    alert('Por favor selecciona un archivo de imagen válido (PNG o JPEG).');
-                    return;
+            sendImageFile(e.target.files[0]);
+        });
+
+        input.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let item of items) {
+                if (item.type.indexOf('image') === 0) {
+                    const blob = item.getAsFile();
+                    sendImageFile(blob);
+                    e.preventDefault();
+                    break;
                 }
-
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    const base64Image = event.target.result;
-                    const now = new Date();
-                    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                    socket.emit('chat message', {
-                        text: input.value.trim(),
-                        image: base64Image,
-                        time: timeStr,
-                        replyTo: replyingTo
-                    });
-
-                    input.value = '';
-                    imageFileInput.value = '';
-                    replyingTo = null;
-                    replyPreviewContainer.style.display = 'none';
-                    socket.emit('typing', false);
-                };
-                reader.readAsDataURL(file);
             }
         });
 
@@ -1431,6 +1603,7 @@
                 replyingTo = null;
                 replyPreviewContainer.style.display = 'none';
                 mentionsPopup.classList.remove('show');
+                emojiPickerPopup.classList.remove('show');
                 socket.emit('typing', false);
             }
         });
@@ -1444,6 +1617,7 @@
             }
             if (!e.target.closest('.chat-form')) {
                 mentionsPopup.classList.remove('show');
+                emojiPickerPopup.classList.remove('show');
             }
         });
 
@@ -1484,7 +1658,6 @@
 
             const formattedMessageText = formatMentions(data.text);
             
-            // Renderizado de imagen si existe
             let imageHtml = '';
             if (data.image) {
                 imageHtml = `<img src="${data.image}" class="msg-image" alt="Imagen enviada" onclick="window.open(this.src)" />`;
@@ -1492,7 +1665,7 @@
 
             item.innerHTML = `
                 <div class="user-avatar" style="background-color: ${data.color}">${initial}</div>
-                <div class="msg-bubble" style="background-color: ${data.color}">
+                <div class="msg-bubble ${data.image ? 'has-image' : ''}" style="background-color: ${data.color}">
                     <div class="msg-info">
                         <span><strong>${data.user}</strong></span>
                         <div style="display: flex; align-items: center; gap: 5px;">
@@ -1582,7 +1755,6 @@
                 const textContainer = targetItem.querySelector('.msg-text-container');
                 const formattedNewText = formatMentions(newText);
                 
-                // Mantener la imagen si existía en el mensaje original
                 const existingImage = targetItem.querySelector('.msg-image');
                 const imageHtml = existingImage ? existingImage.outerHTML : '';
 
