@@ -77,7 +77,6 @@
         ::-webkit-scrollbar { width: 0px; height: 0px; background: transparent; }
         * { scrollbar-width: none; -ms-overflow-style: none; }
 
-        /* Modales */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -211,7 +210,6 @@
             cursor: pointer;
         }
 
-        /* Container Principal */
         .chat-container {
             display: flex;
             width: 100%;
@@ -291,9 +289,27 @@
             100% { opacity: 1; transform: translateX(0) scaleX(1); }
         }
 
-        @keyframes fadeOutMsg {
-            0% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0.8) translateY(-10px); }
+        /* Animación avanzada de desvanecimiento por partículas / difuminado */
+        @keyframes dissolveOut {
+            0% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+                filter: blur(0px);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(0.95) translateY(-5px);
+                filter: blur(3px);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.8) translateY(-15px);
+                filter: blur(8px);
+                max-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+                margin: 0;
+            }
         }
 
         @keyframes editPulse {
@@ -316,6 +332,7 @@
             max-width: 80%;
             word-wrap: break-word;
             position: relative;
+            transition: all 0.3s ease;
         }
 
         #messages li.sent-msg {
@@ -330,8 +347,10 @@
             transform-origin: bottom left;
         }
 
-        #messages li.deleting {
-            animation: fadeOutMsg 0.35s ease-forward !important;
+        #messages li.dissolving {
+            animation: dissolveOut 0.5s ease-out forwards !important;
+            overflow: hidden;
+            pointer-events: none;
         }
 
         #messages li.edited-anim .msg-bubble {
@@ -360,26 +379,61 @@
             gap: 15px;
         }
 
-        .msg-actions {
-            display: inline-flex;
-            gap: 6px;
-            opacity: 0.85;
-            margin-left: 8px;
+        /* Menú Dropdown de 3 Puntos (⋮) */
+        .msg-menu-container {
+            position: relative;
+            display: inline-block;
+            margin-left: 6px;
         }
 
-        .msg-action-btn {
-            background: rgba(0, 0, 0, 0.25);
+        .menu-dots-btn {
+            background: transparent;
             border: none;
             color: #fff;
-            padding: 2px 5px;
-            border-radius: 4px;
             cursor: pointer;
-            font-size: 0.75rem;
-            transition: transform 0.15s, background 0.15s;
+            font-size: 1rem;
+            padding: 0 4px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
         }
-        .msg-action-btn:hover {
-            transform: scale(1.15);
-            background: rgba(0, 0, 0, 0.5);
+        .menu-dots-btn:hover { opacity: 1; }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: #1a1a24;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            z-index: 50;
+            min-width: 110px;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: #fff;
+            background: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .dropdown-item:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .dropdown-item.delete-opt {
+            color: #ff4757;
         }
 
         .msg-text {
@@ -534,11 +588,11 @@
 
     <button id="admin-trigger">Admin Access</button>
 
-    <!-- Modal Admin Password -->
+    <!-- Modal Admin Password (Sin revelar código) -->
     <div id="admin-modal" class="modal-overlay" style="display: none;">
         <div class="modal-box">
             <h2>Panel Admin</h2>
-            <input type="password" id="admin-pass-input" placeholder="Contraseña (1509)..." autocomplete="off">
+            <input type="password" id="admin-pass-input" placeholder="Contraseña de acceso..." autocomplete="off">
             <button class="main-btn" id="admin-login-btn">Acceder</button>
             <button class="main-btn" id="admin-close-btn" style="background: #333; margin-top: 8px;">Cancelar</button>
         </div>
@@ -551,7 +605,6 @@
             <p style="margin-bottom: 15px; font-size: 0.85rem;">Personaliza tu experiencia de chat. Los cambios se guardan automáticamente.</p>
             
             <div class="settings-grid">
-                <!-- Tema -->
                 <div class="setting-card">
                     <label id="st-label-theme">Tema de Interfaz</label>
                     <div class="setting-options">
@@ -562,7 +615,6 @@
                     </div>
                 </div>
 
-                <!-- Idioma -->
                 <div class="setting-card">
                     <label id="st-label-lang">Idioma</label>
                     <div class="setting-options">
@@ -571,7 +623,6 @@
                     </div>
                 </div>
 
-                <!-- Modo Enfoque -->
                 <div class="setting-card">
                     <label id="st-label-focus">Modo Enfoque</label>
                     <div class="setting-options">
@@ -819,7 +870,7 @@
             btn.addEventListener('click', () => setFocusMode(btn.dataset.val));
         });
 
-        // Admin Access
+        // Admin Access (Sin mostrar la contraseña literal en ningún texto de alerta)
         adminTrigger.addEventListener('click', () => {
             if (!isAdmin) adminModal.style.display = 'flex';
         });
@@ -837,11 +888,10 @@
                 refreshMessageActions();
             } else {
                 adminPassInput.value = '';
-                adminPassInput.placeholder = '¡Contraseña Incorrecta!';
+                adminPassInput.placeholder = 'Contraseña incorrecta';
             }
         });
 
-        // Modal Editar Nombre
         saveNameBtn.addEventListener('click', () => {
             const newName = editNameInput.value.trim();
             if (newName !== '' && selectedTargetId) {
@@ -851,7 +901,6 @@
         });
         cancelNameBtn.addEventListener('click', () => editNameModal.style.display = 'none');
 
-        // Modal Editar Mensaje
         saveMsgBtn.addEventListener('click', () => {
             const newText = editMsgInput.value.trim();
             if (newText !== '' && selectedMsgId) {
@@ -875,7 +924,13 @@
             }
         });
 
-        // Recepción de mensaje
+        // Cerrar menús de 3 puntos al hacer clic fuera
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.msg-menu-container')) {
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+            }
+        });
+
         socket.on('chat message', (data) => {
             playMessageSound();
 
@@ -892,12 +947,15 @@
                 <div class="msg-bubble" style="background-color: ${data.color}">
                     <div class="msg-info">
                         <span><strong>${data.user}</strong></span>
-                        <div>
+                        <div style="display: flex; align-items: center; gap: 5px;">
                             <span>${data.time}</span>
-                            <span class="msg-actions" style="display: ${showActions ? 'inline-flex' : 'none'};">
-                                <button class="msg-action-btn edit-msg-btn" title="Editar">✏️</button>
-                                <button class="msg-action-btn del-msg-btn" title="Borrar">🗑️</button>
-                            </span>
+                            <div class="msg-menu-container" style="display: ${showActions ? 'inline-block' : 'none'};">
+                                <button class="menu-dots-btn" title="Opciones">⋮</button>
+                                <div class="dropdown-menu">
+                                    <button class="dropdown-item edit-msg-btn">✏️ Editar</button>
+                                    <button class="dropdown-item delete-opt del-msg-btn">🗑️ Eliminar</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="msg-text-container">
@@ -906,11 +964,23 @@
                 </div>
             `;
 
-            // Eventos para botones de acción en el mensaje
+            // Control de menú de 3 puntos
+            const dotsBtn = item.querySelector('.menu-dots-btn');
+            const menuDropdown = item.querySelector('.dropdown-menu');
             const editBtn = item.querySelector('.edit-msg-btn');
             const delBtn = item.querySelector('.del-msg-btn');
 
+            dotsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Cerrar otros abiertos
+                document.querySelectorAll('.dropdown-menu').forEach(m => {
+                    if (m !== menuDropdown) m.classList.remove('show');
+                });
+                menuDropdown.classList.toggle('show');
+            });
+
             editBtn.addEventListener('click', () => {
+                menuDropdown.classList.remove('show');
                 selectedMsgId = data.id;
                 const currentText = item.querySelector('.msg-text-content').textContent;
                 editMsgInput.value = currentText;
@@ -918,6 +988,7 @@
             });
 
             delBtn.addEventListener('click', () => {
+                menuDropdown.classList.remove('show');
                 socket.emit('delete message', data.id);
             });
 
@@ -925,18 +996,17 @@
             messages.scrollTop = messages.scrollHeight;
         });
 
-        // Evento de mensaje eliminado
+        // Animación de desvanecimiento para todos los clientes
         socket.on('message deleted', (msgId) => {
             const targetItem = document.getElementById(msgId);
             if (targetItem) {
-                targetItem.classList.add('deleting');
+                targetItem.classList.add('dissolving');
                 setTimeout(() => {
                     targetItem.remove();
-                }, 300);
+                }, 500);
             }
         });
 
-        // Evento de mensaje editado
         socket.on('message edited', ({ msgId, newText }) => {
             const targetItem = document.getElementById(msgId);
             if (targetItem) {
@@ -944,20 +1014,19 @@
                 textContainer.innerHTML = `<span class="msg-text-content">${newText}</span><span class="edited-tag">(editado)</span>`;
                 
                 targetItem.classList.remove('edited-anim');
-                void targetItem.offsetWidth; // Trigger reflow para reiniciar animación
+                void targetItem.offsetWidth;
                 targetItem.classList.add('edited-anim');
             }
         });
 
-        // Actualizar visibilidad de controles si el usuario activa Admin
         function refreshMessageActions() {
             document.querySelectorAll('#messages li').forEach(li => {
                 const senderId = li.dataset.senderId;
                 const isMe = (senderId === socket.id);
-                const actionsSpan = li.querySelector('.msg-actions');
-                if (actionsSpan) {
+                const menuContainer = li.querySelector('.msg-menu-container');
+                if (menuContainer) {
                     if (isMe || isAdmin) {
-                        actionsSpan.style.display = 'inline-flex';
+                        menuContainer.style.display = 'inline-block';
                     }
                 }
             });
