@@ -111,7 +111,6 @@
             animation: modalFadeIn 0.25s ease-out;
         }
 
-        /* --- PANTALLA DE BIENVENIDA MODERNA CON ANIMACIÓN --- */
         @keyframes welcomeCardEntrance {
             0% { opacity: 0; transform: translateY(30px) scale(0.92); }
             100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -204,7 +203,6 @@
             transition: border-color 0.2s;
         }
 
-        /* CONTROLES SUPERIORES (ADMIN + LOGOUT DEBAJO) */
         .top-right-controls {
             position: absolute;
             top: 15px;
@@ -565,7 +563,6 @@
             background-color: rgba(255, 255, 255, 0.03);
         }
 
-        /* --- RESALTADO DE MENSAJE MENCIONADO TIPO DISCORD --- */
         #messages li.mentioned-me {
             background-color: var(--mention-bg) !important;
             border-left: 3px solid var(--mention-border) !important;
@@ -654,6 +651,117 @@
             object-fit: cover;
             border: none;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- BOTÓN Y REPRODUCTOR DE AUDIO ESTILIZADO --- */
+        .audio-player-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 8px 12px;
+            border-radius: 25px;
+            margin-top: 4px;
+            min-width: 210px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .audio-play-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            transition: transform 0.15s, background 0.2s;
+        }
+        .audio-play-btn:hover {
+            transform: scale(1.08);
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .audio-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .audio-track-line {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .audio-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: #ffffff;
+            border-radius: 2px;
+            transition: width 0.1s linear;
+        }
+
+        .audio-time-label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.75);
+            font-weight: 600;
+        }
+
+        /* BOTÓN DE GRABACIÓN DE AUDIO CON ANIMACIÓN */
+        .mic-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            outline: none;
+            border-radius: 50%;
+            transition: background 0.2s, color 0.2s, transform 0.15s;
+        }
+        .mic-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+        .mic-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.06);
+            transform: scale(1.05);
+        }
+        .mic-btn.recording {
+            color: #ff4757 !important;
+            background: rgba(255, 71, 87, 0.15) !important;
+            animation: pulseMic 1.2s infinite ease-in-out;
+        }
+
+        @keyframes pulseMic {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
+            50% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(255, 71, 87, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+        }
+
+        @keyframes sendAudioSuccess {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.03) translateY(-4px); filter: brightness(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .chat-form.sending-audio-anim {
+            animation: sendAudioSuccess 0.4s ease-out;
         }
 
         /* --- ESTILOS REACCIONES ESTILO DISCORD --- */
@@ -792,7 +900,6 @@
         }
         .picker-emoji-opt:hover { background: rgba(255,255,255,0.15); }
 
-        /* --- VISTA PREVIA DE IMAGEN FLOTANTE --- */
         #image-preview-container {
             display: none;
             align-items: center;
@@ -830,7 +937,6 @@
             justify-content: center;
         }
 
-        /* --- VISOR MODAL DE IMÁGENES GRANDES CON FADE --- */
         .image-viewer-overlay {
             position: fixed;
             top: 0; left: 0;
@@ -1130,7 +1236,6 @@
         }
         .emoji-item:hover { background: rgba(255, 255, 255, 0.15); }
 
-        /* --- POPUP DE AUTOCOMPLETADO DE MENCIONES TIPO DISCORD --- */
         .mentions-autocomplete {
             display: none;
             position: absolute;
@@ -1320,7 +1425,7 @@
 </head>
 <body>
 
-    <!-- BOTONES CONTROLES SUPERIORES (ADMIN Y CERRAR SESIÓN DEBAJO) -->
+    <!-- BOTONES CONTROLES SUPERIORES -->
     <div class="top-right-controls">
         <button class="control-btn" id="admin-trigger">Admin Access</button>
         <button class="control-btn logout-btn-top" id="logout-btn" style="display: none;">Cerrar Sesión</button>
@@ -1404,7 +1509,7 @@
         </div>
     </div>
 
-    <!-- PANTALLA DE BIENVENIDA MODERNA CON PERFIL PERSISTENTE -->
+    <!-- PANTALLA DE BIENVENIDA MODERNA -->
     <div id="welcome-modal-overlay" class="modal-overlay">
         <div class="welcome-box">
             <h2 class="welcome-title">¡Bienvenido al Chat!</h2>
@@ -1501,6 +1606,13 @@
 
                 <input type="text" id="input" autocomplete="off" placeholder="Escribe un mensaje... (Usa @ para mencionar)" />
                 
+                <!-- BOTÓN GRABAR AUDIO -->
+                <button type="button" class="mic-btn" id="mic-btn" title="Manejar Audio">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.49 6-3.31 6-6.72h-1.7z"/>
+                    </svg>
+                </button>
+
                 <button type="button" class="emoji-toggle-btn" id="emoji-toggle-btn" title="Insertar Emoji">😊</button>
                 <button class="main-btn" id="btn-send">Enviar</button>
 
@@ -1597,6 +1709,8 @@
         const emojiGrid = document.getElementById('emoji-grid');
         const emojiTabBtns = document.querySelectorAll('.emoji-tab-btn');
 
+        const micBtn = document.getElementById('mic-btn');
+
         let myNickname = '';
         let myAvatarBase64 = null;
         let isAdmin = false;
@@ -1611,12 +1725,16 @@
         let unreadMentionsCount = 0;
         let isWindowFocused = true;
 
+        // SISTEMA DE GRABACIÓN DE AUDIO HÁPTICO/SENSORIAL
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+
         const EMOJI_DATABASE = {
             faces: ['😀','😃','😄','😁','😆','😅','😂','🤣','🥲','☺️','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃'],
             people: ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦵','🦿','🦶','👂','🦻','👃','🧠','🫀','🫁','🦷','🦴','👀','👁️','👅','👄','👶','🧒','👦','👧','🧑','👱','👨','🧔','👩','🧓','👴','👵','🙍','🙎','🙅','🙆','💁','🙋','🧏','🙇','🤦','🤷']
         };
 
-        // CONTROL DE FOCO Y MENCIONES EN PESTAÑA
         window.addEventListener('focus', () => {
             isWindowFocused = true;
             unreadMentionsCount = 0;
@@ -1627,7 +1745,88 @@
             isWindowFocused = false;
         });
 
-        // CAMBIO DE AVATAR EN PANTALLA BIENVENIDA
+        // TONO AUDITIVO DE TACTO/SATISFACCIÓN (Web Audio API)
+        function triggerHapticFeedback(frequency = 600, duration = 0.08) {
+            if (navigator.vibrate) {
+                navigator.vibrate(40);
+            }
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(frequency, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(frequency * 0.5, ctx.currentTime + duration);
+
+                gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        // LÓGICA GRABACIÓN DE NOTAS DE VOZ
+        micBtn.addEventListener('click', async () => {
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (e) => {
+                        if (e.data.size > 0) audioChunks.push(e.data);
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                            const base64Audio = reader.result;
+                            sendAudioMessage(base64Audio);
+                        };
+                        reader.readAsDataURL(audioBlob);
+
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    micBtn.classList.add('recording');
+                    triggerHapticFeedback(800, 0.1); // Tono de inicio satisfactorio
+                } catch (err) {
+                    alert('No se pudo acceder al micrófono.');
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                micBtn.classList.remove('recording');
+                triggerHapticFeedback(400, 0.1); // Tono finalización
+            }
+        });
+
+        function sendAudioMessage(base64Audio) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            // Animación de envío en el formulario
+            form.classList.add('sending-audio-anim');
+            setTimeout(() => form.classList.remove('sending-audio-anim'), 450);
+
+            socket.emit('chat message', {
+                text: '',
+                image: null,
+                audio: base64Audio,
+                time: timeStr,
+                replyTo: replyingTo
+            });
+
+            replyingTo = null;
+            replyPreviewContainer.style.display = 'none';
+        }
+
         pencilAvatarBtn.addEventListener('click', () => avatarFileInput.click());
 
         avatarFileInput.addEventListener('change', (e) => {
@@ -1650,7 +1849,6 @@
             }
         }
 
-        // AUTO-INICIO DE SESIÓN
         function checkAutoLogin() {
             const savedNickname = localStorage.getItem('chat_nickname');
             const savedAvatar = localStorage.getItem('chat_avatar');
@@ -1888,7 +2086,6 @@
         document.querySelectorAll('.lang-opt').forEach(btn => btn.addEventListener('click', () => setLanguage(btn.dataset.val)));
         document.querySelectorAll('.sound-opt').forEach(btn => btn.addEventListener('click', () => setSoundType(btn.dataset.val)));
 
-        // MENCIONES DISCORD Y AUTOCOMPLETADO
         input.addEventListener('input', () => {
             socket.emit('typing', true);
             clearTimeout(typingTimeout);
@@ -1909,7 +2106,6 @@
         function showMentionsPopup(query) {
             mentionsPopup.innerHTML = '';
 
-            // Opción @everyone
             if ('everyone'.includes(query)) {
                 const everyoneDiv = document.createElement('div');
                 everyoneDiv.className = 'mention-item';
@@ -2036,6 +2232,7 @@
                 socket.emit('chat message', {
                     text: input.value,
                     image: pendingImageBase64,
+                    audio: null,
                     time: timeStr,
                     replyTo: replyingTo
                 });
@@ -2070,11 +2267,9 @@
             if (!text) return '';
             let formattedText = text;
 
-            // Mención @everyone
             const everyoneRegex = /@everyone\b/gi;
             formattedText = formattedText.replace(everyoneRegex, `<span class="mention-tag everyone">@everyone</span>`);
 
-            // Menciones de usuarios
             Object.values(currentUsersData).forEach(u => {
                 const mentionRegex = new RegExp(`@${u.nickname}\\b`, 'gi');
                 if (mentionRegex.test(formattedText)) {
@@ -2095,7 +2290,6 @@
             const isMe = (data.senderId === socket.id);
             item.className = isMe ? 'sent-msg' : 'received-msg';
 
-            // Detección de Mención personal o @everyone
             const isMentioned = data.text && (
                 data.text.includes(`@${myNickname}`) || 
                 data.text.toLowerCase().includes('@everyone')
@@ -2130,6 +2324,22 @@
             const formattedMessageText = formatMentions(data.text);
             let imageHtml = data.image ? `<img src="${data.image}" class="msg-image" onclick="openImageViewer(this.src)" />` : '';
 
+            // RENDERIZADO DE NOTA DE VOZ (REPRODUCTOR MINIMALISTA)
+            let audioHtml = '';
+            if (data.audio) {
+                audioHtml = `
+                    <div class="audio-player-card">
+                        <button class="audio-play-btn" type="button">▶</button>
+                        <div class="audio-body">
+                            <div class="audio-track-line">
+                                <div class="audio-progress-fill"></div>
+                            </div>
+                            <span class="audio-time-label">0:00</span>
+                        </div>
+                    </div>
+                `;
+            }
+
             item.innerHTML = `
                 ${userAvatarHtml}
                 <div class="msg-content-wrapper">
@@ -2151,7 +2361,7 @@
                                     <div class="dropdown-menu">
                                         <button class="dropdown-item reply-msg-btn">↩️ Responder</button>
                                         ${showOwnerAdminOpts ? `
-                                            <button class="dropdown-item edit-msg-btn">✏️ Editar</button>
+                                            ${data.text ? '<button class="dropdown-item edit-msg-btn">✏️ Editar</button>' : ''}
                                             <button class="dropdown-item delete-opt del-msg-btn">🗑️ Eliminar</button>
                                         ` : ''}
                                     </div>
@@ -2162,12 +2372,66 @@
                         <div class="msg-text-container">
                             ${formattedMessageText ? `<span class="msg-text-content">${formattedMessageText}</span>` : ''}
                             ${imageHtml}
+                            ${audioHtml}
                         </div>
                     </div>
 
                     <div class="reactions-display-container"></div>
                 </div>
             `;
+
+            // INICIALIZACIÓN DEL REPRODUCTOR AUDIO
+            if (data.audio) {
+                const audioObj = new Audio(data.audio);
+                const playBtn = item.querySelector('.audio-play-btn');
+                const progressFill = item.querySelector('.audio-progress-fill');
+                const timeLabel = item.querySelector('.audio-time-label');
+                const trackLine = item.querySelector('.audio-track-line');
+
+                audioObj.addEventListener('loadedmetadata', () => {
+                    const durationStr = formatTime(audioObj.duration);
+                    timeLabel.textContent = `0:00 / ${durationStr}`;
+                });
+
+                audioObj.addEventListener('timeupdate', () => {
+                    if (audioObj.duration) {
+                        const pct = (audioObj.currentTime / audioObj.duration) * 100;
+                        progressFill.style.width = pct + '%';
+                        timeLabel.textContent = `${formatTime(audioObj.currentTime)} / ${formatTime(audioObj.duration)}`;
+                    }
+                });
+
+                audioObj.addEventListener('ended', () => {
+                    playBtn.textContent = '▶';
+                    progressFill.style.width = '0%';
+                    timeLabel.textContent = `0:00 / ${formatTime(audioObj.duration)}`;
+                });
+
+                playBtn.addEventListener('click', () => {
+                    if (audioObj.paused) {
+                        audioObj.play();
+                        playBtn.textContent = '⏸';
+                    } else {
+                        audioObj.pause();
+                        playBtn.textContent = '▶';
+                    }
+                });
+
+                trackLine.addEventListener('click', (e) => {
+                    const rect = trackLine.getBoundingClientRect();
+                    const clickPos = (e.clientX - rect.left) / rect.width;
+                    if (audioObj.duration) {
+                        audioObj.currentTime = clickPos * audioObj.duration;
+                    }
+                });
+            }
+
+            function formatTime(seconds) {
+                if (isNaN(seconds)) return '0:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            }
 
             const quickBtns = item.querySelectorAll('.react-quick-btn:not(.react-more-btn)');
             quickBtns.forEach(btn => {
@@ -2217,10 +2481,10 @@
 
             replyBtn.addEventListener('click', () => {
                 menuDropdown.classList.remove('show');
-                replyingTo = { user: data.user, text: data.text || '[Imagen]', color: data.color };
+                replyingTo = { user: data.user, text: data.text || (data.audio ? '[Audio]' : '[Imagen]'), color: data.color };
                 replyPreviewUser.textContent = `Respondiendo a ${data.user}:`;
                 replyPreviewUser.style.color = data.color;
-                replyPreviewText.textContent = data.text || '[Imagen]';
+                replyPreviewText.textContent = data.text || (data.audio ? '[Audio]' : '[Imagen]');
                 replyPreviewContainer.style.display = 'flex';
                 input.focus();
             });
