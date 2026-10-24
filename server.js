@@ -16,7 +16,7 @@ const AVAILABLE_COLORS = [
 ];
 
 let colorIndex = 0;
-const users = {}; // { socketId: { nickname, color, isFirst, status } }
+const users = {}; 
 const typingUsers = new Set();
 let messageIdCounter = 0;
 
