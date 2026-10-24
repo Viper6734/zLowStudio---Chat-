@@ -8,7 +8,7 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-// Paleta de colores variados (excluyendo tonos muy oscuros y blancos)
+// Paleta de colores variados (excluyendo el amarillo reservado para el primero)
 const AVAILABLE_COLORS = [
     '#ff4757', '#2ed573', '#1e90ff', '#ffa502', '#eccc68',
     '#ff6b81', '#70a1ff', '#7bed9f', '#ff7f50', '#a29bfe',
@@ -17,7 +17,7 @@ const AVAILABLE_COLORS = [
 ];
 
 let colorIndex = 0;
-const users = {}; // { socketId: { nickname: string, color: string } }
+const users = {}; // { socketId: { nickname, color, isFirst } }
 
 function getUniqueColor() {
     const color = AVAILABLE_COLORS[colorIndex % AVAILABLE_COLORS.length];
@@ -28,11 +28,15 @@ function getUniqueColor() {
 io.on('connection', (socket) => {
     socket.on('join', (nickname) => {
         socket.nickname = nickname || 'Anónimo';
-        socket.userColor = getUniqueColor();
+        
+        // Verificar si es el primer usuario conectado
+        const isFirst = Object.keys(users).length === 0;
+        socket.userColor = isFirst ? '#ffcc00' : getUniqueColor();
 
         users[socket.id] = {
             nickname: socket.nickname,
-            color: socket.userColor
+            color: socket.userColor,
+            isFirst: isFirst
         };
 
         io.emit('system-message', `${socket.nickname} ha entrado al chat.`);
@@ -51,7 +55,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Cambiar nombre o color por Admin
     socket.on('admin update user', ({ targetId, newName, newColor }) => {
         if (users[targetId]) {
             if (newName && newName.trim() !== '') {
@@ -68,7 +71,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Evento Kick
     socket.on('kick user', ({ targetId, adminName }) => {
         if (users[targetId]) {
             const targetSocket = io.sockets.sockets.get(targetId);
