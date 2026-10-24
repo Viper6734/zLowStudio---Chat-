@@ -5,7 +5,7 @@ const { Server } = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-    maxHttpBufferSize: 15e6 // 15 MB para soportar audios, imágenes y avatares
+    maxHttpBufferSize: 20e6 // 20 MB para soportar audios pesados, imágenes y avatares
 });
 
 app.use(express.static('public'));
@@ -74,7 +74,7 @@ io.on('connection', (socket) => {
                 color: users[socket.id].color,
                 text: data.text || '',
                 image: data.image || null,
-                audio: data.audio || null, // Soporte para nota de voz
+                audio: data.audio || null, // Soporte de Nota de Voz
                 time: data.time,
                 replyTo: data.replyTo || null,
                 reactions: {}
