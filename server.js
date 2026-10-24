@@ -8,7 +8,7 @@ const io = new Server(server);
 
 app.use(express.static('public'));
 
-// Paleta de colores variados (excluyendo tonos muy oscuros/negros y blancos/grises muy claros)
+// Paleta de colores variados (excluyendo tonos muy oscuros y blancos)
 const AVAILABLE_COLORS = [
     '#ff4757', '#2ed573', '#1e90ff', '#ffa502', '#eccc68',
     '#ff6b81', '#70a1ff', '#7bed9f', '#ff7f50', '#a29bfe',
@@ -17,9 +17,7 @@ const AVAILABLE_COLORS = [
 ];
 
 let colorIndex = 0;
-
-// Estructura de usuarios: { socketId: { nickname: string, color: string } }
-const users = {};
+const users = {}; // { socketId: { nickname: string, color: string } }
 
 function getUniqueColor() {
     const color = AVAILABLE_COLORS[colorIndex % AVAILABLE_COLORS.length];
@@ -53,28 +51,24 @@ io.on('connection', (socket) => {
         }
     });
 
-    // Edición por parte del Admin (Nombre o Color)
+    // Cambiar nombre o color por Admin
     socket.on('admin update user', ({ targetId, newName, newColor }) => {
         if (users[targetId]) {
             if (newName && newName.trim() !== '') {
                 users[targetId].nickname = newName.trim();
                 const targetSocket = io.sockets.sockets.get(targetId);
-                if (targetSocket) {
-                    targetSocket.nickname = newName.trim();
-                }
+                if (targetSocket) targetSocket.nickname = newName.trim();
             }
             if (newColor) {
                 users[targetId].color = newColor;
                 const targetSocket = io.sockets.sockets.get(targetId);
-                if (targetSocket) {
-                    targetSocket.userColor = newColor;
-                }
+                if (targetSocket) targetSocket.userColor = newColor;
             }
             io.emit('update-users', users);
         }
     });
 
-    // Evento de baneo/kick
+    // Evento Kick
     socket.on('kick user', ({ targetId, adminName }) => {
         if (users[targetId]) {
             const targetSocket = io.sockets.sockets.get(targetId);
