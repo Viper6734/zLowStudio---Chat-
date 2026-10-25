@@ -1,3 +1,4 @@
+```javascript
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -14,11 +15,7 @@ const io = new Server(server, {
 app.use(express.static('public'));
 
 // ============================================================
-// GIFs: proxy en el servidor para no exponer la API key en el navegador.
-// La API de Tenor se apagó el 30/06/2026, por eso se usa Klipy (API casi
-// idéntica a Tenor) o Giphy. Configura con variables de entorno:
-//   GIF_API_KEY=tu_clave
-//   GIF_PROVIDER=klipy   (o "giphy")
+// GIFs: proxy en el servidor para no exponer la API key
 // ============================================================
 const GIF_API_KEY = process.env.GIF_API_KEY || 'EqKveKya673SGDNK1vWqZlqCeczfAYPbRC3KDD9WDW8cVMQKPG6wTnMWcEoqOglk';
 const GIF_PROVIDER = (process.env.GIF_PROVIDER || 'klipy').toLowerCase();
@@ -138,8 +135,14 @@ function broadcastRecordingStatus() {
         .filter(Boolean);
     io.emit('recording update', names);
 }
+
 let messageIdCounter = 0;
 const messagesStore = {};
+const privateMessagesStore = {}; // roomId -> Array de mensajes
+
+function getDmRoomId(uid1, uid2) {
+    return [uid1, uid2].sort().join('__');
+}
 
 // --- Limpieza de datos de perfil ---
 function cleanName(n) { return String(n || '').replace(/[<>]/g, '').trim().slice(0, 24); }
@@ -148,14 +151,8 @@ function cleanAvatar(a) {
     return (typeof a === 'string' && a.startsWith('data:image/') && a.length <= 8000000) ? a : null;
 }
 
-
 // ============================================================
-// AMIGOS
-// Cada navegador tiene un "token" secreto (nunca se comparte). Con él se
-// calcula un uid público, que es el que usan los demás para agregarte.
-// Las amistades y solicitudes se guardan en un archivo JSON (best effort):
-// en hostings con disco temporal (p. ej. plan gratis de Render) se pierden al
-// volver a desplegar. Puedes cambiar la ruta con la variable FRIENDS_FILE.
+// AMIGOS & PERFILES
 // ============================================================
 const FRIENDS_FILE = process.env.FRIENDS_FILE || path.join(__dirname, 'friends-data.json');
 let profiles = {};          // uid -> { nickname, avatar, color, bio, memberSince, lastSeen }
@@ -173,7 +170,7 @@ function loadFriendsData() {
         profiles = raw.profiles || {};
         Object.entries(raw.friends || {}).forEach(([k, v]) => { friendsMap[k] = new Set(v); });
         Object.entries(raw.requests || {}).forEach(([k, v]) => { requestsMap[k] = new Set(v); });
-    } catch (e) { /* primera vez: no hay archivo */ }
+    } catch (e) { /* primera vez */ }
 }
 loadFriendsData();
 
@@ -336,7 +333,6 @@ io.on('connection', (socket) => {
         if (!me || typeof to !== 'string' || to === me || !profiles[to]) return;
         if (friendsMap[me] && friendsMap[me].has(to)) return;
 
-        // Si la otra persona ya me había enviado una, se aceptan mutuamente
         if (requestsMap[me] && requestsMap[me].has(to)) return acceptFriendship(me, to);
 
         if (!requestsMap[to]) requestsMap[to] = new Set();
@@ -422,6 +418,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- MENSAJES PÚBLICOS ---
     socket.on('chat message', (data) => {
         if (users[socket.id]) {
             messageIdCounter++;
@@ -455,7 +452,7 @@ io.on('connection', (socket) => {
                 color: users[socket.id].color,
                 text: data.text || '',
                 image: image,
-                audio: audio, // <--- SE AGREGÓ EL AUDIO
+                audio: audio,
                 waveform: audio ? waveform : null,
                 duration: audio ? duration : 0,
                 time: data.time,
@@ -468,6 +465,164 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- CHAT PRIVADO (DMs) ---
+    socket.on('get private history', ({ targetUid }) => {
+        const me = socket.uid;
+        if (!me || !targetUid) return;
+        const roomId = getDmRoomId(me, targetUid);
+        const history = privateMessagesStore[roomId] || [];
+        socket.emit('private history', { targetUid, messages: history });
+    });
+
+    socket.on('private message', (data) => {
+        const me = socket.uid;
+        const toUid = data && data.targetUid;
+        const u = users[socket.id];
+        if (!me || !toUid || !u) return;
+
+        messageIdCounter++;
+        const msgId = 'dm_' + messageIdCounter + '_' + Date.now();
+        const roomId = getDmRoomId(me, toUid);
+
+        let image = data.image || null;
+        if (typeof image !== 'string' || !(image.startsWith('data:image/') || /^https:\/\//i.test(image))) {
+            image = null;
+        }
+
+        let audio = data.audio || null;
+        if (typeof audio !== 'string' || !audio.startsWith('data:audio/')) audio = null;
+
+        let waveform = null;
+        if (Array.isArray(data.waveform) && data.waveform.length > 0 && data.waveform.length <= 100) {
+            waveform = data.waveform.map(n => Math.min(100, Math.max(0, Math.round(Number(n) || 0))));
+        }
+        let duration = Number(data.duration);
+        duration = (isFinite(duration) && duration > 0 && duration < 3600) ? Math.round(duration * 10) / 10 : 0;
+
+        const msgData = {
+            id: msgId,
+            senderId: socket.id,
+            senderUid: me,
+            targetUid: toUid,
+            user: u.nickname,
+            avatar: u.avatar,
+            color: u.color,
+            text: data.text || '',
+            image: image,
+            audio: audio,
+            waveform: audio ? waveform : null,
+            duration: audio ? duration : 0,
+            time: data.time,
+            replyTo: data.replyTo || null,
+            reactions: {}
+        };
+
+        if (!privateMessagesStore[roomId]) privateMessagesStore[roomId] = [];
+        privateMessagesStore[roomId].push(msgData);
+        if (privateMessagesStore[roomId].length > 150) privateMessagesStore[roomId].shift();
+
+        // Enviar al emisor
+        socket.emit('private message', msgData);
+
+        // Enviar al destinatario
+        const destSocketId = onlineByUid[toUid];
+        if (destSocketId && destSocketId !== socket.id) {
+            io.to(destSocketId).emit('private message', msgData);
+        }
+    });
+
+    socket.on('private typing', ({ targetUid, isTyping }) => {
+        const destSocketId = onlineByUid[targetUid];
+        if (destSocketId && users[socket.id]) {
+            io.to(destSocketId).emit('private typing update', {
+                fromUid: socket.uid,
+                fromName: users[socket.id].nickname,
+                isTyping: !!isTyping
+            });
+        }
+    });
+
+    socket.on('private recording', ({ targetUid, isRecording }) => {
+        const destSocketId = onlineByUid[targetUid];
+        if (destSocketId && users[socket.id]) {
+            io.to(destSocketId).emit('private recording update', {
+                fromUid: socket.uid,
+                fromName: users[socket.id].nickname,
+                isRecording: !!isRecording
+            });
+        }
+    });
+
+    socket.on('add private reaction', ({ targetUid, msgId, emoji }) => {
+        const me = socket.uid;
+        if (!me || !targetUid || !users[socket.id]) return;
+        const roomId = getDmRoomId(me, targetUid);
+        const list = privateMessagesStore[roomId] || [];
+        const msg = list.find(m => m.id === msgId);
+        if (!msg) return;
+
+        if (!msg.reactions) msg.reactions = {};
+        let alreadyReacted = false;
+
+        Object.keys(msg.reactions).forEach(e => {
+            msg.reactions[e] = msg.reactions[e].filter(item => {
+                if (item.uid === me && e === emoji) {
+                    alreadyReacted = true;
+                    return false;
+                }
+                return item.uid !== me;
+            });
+            if (msg.reactions[e].length === 0) delete msg.reactions[e];
+        });
+
+        if (!alreadyReacted) {
+            if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
+            msg.reactions[emoji].push({
+                id: socket.id,
+                uid: me,
+                nickname: users[socket.id].nickname,
+                avatar: users[socket.id].avatar,
+                color: users[socket.id].color
+            });
+        }
+
+        const payload = { targetUid, msgId, reactions: msg.reactions };
+        socket.emit('update private reactions', payload);
+        const destSocketId = onlineByUid[targetUid];
+        if (destSocketId && destSocketId !== socket.id) {
+            io.to(destSocketId).emit('update private reactions', { targetUid: me, msgId, reactions: msg.reactions });
+        }
+    });
+
+    socket.on('delete private message', ({ targetUid, msgId }) => {
+        const me = socket.uid;
+        if (!me || !targetUid) return;
+        const roomId = getDmRoomId(me, targetUid);
+        if (privateMessagesStore[roomId]) {
+            privateMessagesStore[roomId] = privateMessagesStore[roomId].filter(m => m.id !== msgId);
+        }
+        socket.emit('private message deleted', { targetUid, msgId });
+        const destSocketId = onlineByUid[targetUid];
+        if (destSocketId) {
+            io.to(destSocketId).emit('private message deleted', { targetUid: me, msgId });
+        }
+    });
+
+    socket.on('edit private message', ({ targetUid, msgId, newText }) => {
+        const me = socket.uid;
+        if (!me || !targetUid) return;
+        const roomId = getDmRoomId(me, targetUid);
+        const msg = (privateMessagesStore[roomId] || []).find(m => m.id === msgId);
+        if (msg) msg.text = newText;
+
+        socket.emit('private message edited', { targetUid, msgId, newText });
+        const destSocketId = onlineByUid[targetUid];
+        if (destSocketId) {
+            io.to(destSocketId).emit('private message edited', { targetUid: me, msgId, newText });
+        }
+    });
+
+    // --- REACCIONES PÚBLICAS ---
     socket.on('add reaction', ({ msgId, emoji }) => {
         const user = users[socket.id];
         const msg = messagesStore[msgId];
