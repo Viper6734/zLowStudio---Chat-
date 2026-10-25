@@ -1,4 +1,3 @@
-javascript
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -15,7 +14,7 @@ const io = new Server(server, {
 app.use(express.static('public'));
 
 // ============================================================
-// GIFs: proxy en el servidor para no exponer la API key
+// GIFs: proxy en el servidor
 // ============================================================
 const GIF_API_KEY = process.env.GIF_API_KEY || 'EqKveKya673SGDNK1vWqZlqCeczfAYPbRC3KDD9WDW8cVMQKPG6wTnMWcEoqOglk';
 const GIF_PROVIDER = (process.env.GIF_PROVIDER || 'klipy').toLowerCase();
@@ -141,10 +140,9 @@ const messagesStore = {};
 const privateMessagesStore = {}; // roomId -> Array de mensajes
 
 function getDmRoomId(uid1, uid2) {
-    return [uid1, uid2].sort().join('__');
+    return [String(uid1), String(uid2)].sort().join('__');
 }
 
-// --- Limpieza de datos de perfil ---
 function cleanName(n) { return String(n || '').replace(/[<>]/g, '').trim().slice(0, 24); }
 function cleanBio(b) { return String(b || '').replace(/[<>]/g, '').trim().slice(0, 200); }
 function cleanAvatar(a) {
@@ -155,10 +153,10 @@ function cleanAvatar(a) {
 // AMIGOS & PERFILES
 // ============================================================
 const FRIENDS_FILE = process.env.FRIENDS_FILE || path.join(__dirname, 'friends-data.json');
-let profiles = {};          // uid -> { nickname, avatar, color, bio, memberSince, lastSeen }
-const friendsMap = {};      // uid -> Set(uid)
-const requestsMap = {};     // uid destino -> Set(uid origen)
-const onlineByUid = {};     // uid -> socket.id activo
+let profiles = {};
+const friendsMap = {};
+const requestsMap = {};
+const onlineByUid = {};
 
 function uidFromToken(token) {
     return crypto.createHash('sha256').update('chat-uid:' + token).digest('hex').slice(0, 16);
@@ -170,7 +168,7 @@ function loadFriendsData() {
         profiles = raw.profiles || {};
         Object.entries(raw.friends || {}).forEach(([k, v]) => { friendsMap[k] = new Set(v); });
         Object.entries(raw.requests || {}).forEach(([k, v]) => { requestsMap[k] = new Set(v); });
-    } catch (e) { /* primera vez */ }
+    } catch (e) {}
 }
 loadFriendsData();
 
@@ -193,7 +191,7 @@ function saveFriendsData() {
             if (p) outProfiles[id] = Object.assign({}, p, { avatar: (p.avatar && p.avatar.length <= 300000) ? p.avatar : null });
         });
         fs.writeFile(FRIENDS_FILE, JSON.stringify({ profiles: outProfiles, friends, requests }), (err) => {
-            if (err) console.error('No se pudo guardar los amigos:', err.message);
+            if (err) console.error('No se pudo guardar amigos:', err.message);
         });
     }, 600);
 }
@@ -294,15 +292,20 @@ io.on('connection', (socket) => {
         const avatar = (userData && userData.avatar) ? cleanAvatar(userData.avatar) : null;
         const bio = (userData && userData.bio) ? cleanBio(userData.bio) : '';
 
-        const token = (userData && typeof userData.token === 'string' && userData.token.length >= 16 && userData.token.length <= 100) ? userData.token : null;
-        const uid = token ? uidFromToken(token) : null;
+        let token = (userData && typeof userData.token === 'string' && userData.token.length >= 8) ? userData.token : null;
+        if (!token) {
+            token = crypto.randomBytes(16).toString('hex');
+        }
+        const uid = uidFromToken(token);
         socket.uid = uid;
+
+        // Informar al cliente de inmediato cuál es su UID verificado
+        socket.emit('session', { uid: uid });
 
         let memberSince = Number(userData && userData.memberSince);
         if (!isFinite(memberSince) || memberSince < 1577836800000 || memberSince > Date.now()) memberSince = Date.now();
 
         socket.nickname = nickname;
-        
         const isFirst = Object.keys(users).length === 0;
         socket.userColor = isFirst ? '#ffcc00' : getUniqueColor();
 
@@ -318,10 +321,8 @@ io.on('connection', (socket) => {
             uid: uid
         };
 
-        if (uid) {
-            onlineByUid[uid] = socket.id;
-            syncProfileFromSocket(socket.id);
-        }
+        onlineByUid[uid] = socket.id;
+        syncProfileFromSocket(socket.id);
 
         io.emit('system-message', `${socket.nickname} ha entrado al chat.`);
         io.emit('update-users', users);
@@ -465,7 +466,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // --- CHAT PRIVADO (DMs) ---
+    // --- CHAT PRIVADO ---
     socket.on('get private history', ({ targetUid }) => {
         const me = socket.uid;
         if (!me || !targetUid) return;
@@ -636,14 +637,10 @@ io.on('connection', (socket) => {
                         alreadyReacted = true;
                         return false;
                     }
-                    if (item.id === socket.id) {
-                        return false;
-                    }
+                    if (item.id === socket.id) return false;
                     return true;
                 });
-                if (msg.reactions[e].length === 0) {
-                    delete msg.reactions[e];
-                }
+                if (msg.reactions[e].length === 0) delete msg.reactions[e];
             });
 
             if (!alreadyReacted) {
@@ -662,11 +659,8 @@ io.on('connection', (socket) => {
 
     socket.on('typing', (isTyping) => {
         if (users[socket.id]) {
-            if (isTyping) {
-                typingUsers.add(socket.id);
-            } else {
-                typingUsers.delete(socket.id);
-            }
+            if (isTyping) typingUsers.add(socket.id);
+            else typingUsers.delete(socket.id);
             broadcastTypingStatus();
         }
     });
@@ -675,7 +669,6 @@ io.on('connection', (socket) => {
         const names = Array.from(typingUsers)
             .map(id => users[id] ? users[id].nickname : null)
             .filter(Boolean);
-
         io.emit('typing update', names);
     }
 
@@ -692,9 +685,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('edit message', ({ msgId, newText }) => {
-        if (messagesStore[msgId]) {
-            messagesStore[msgId].text = newText;
-        }
+        if (messagesStore[msgId]) messagesStore[msgId].text = newText;
         io.emit('message edited', { msgId, newText });
     });
 
