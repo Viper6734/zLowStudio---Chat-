@@ -2313,6 +2313,9 @@
         let currentDmUser = null;
         let globalMessagesBackup = [];
         const privateCache = {}; // targetUid -> []
+        let myUid = localStorage.getItem('chat_uid') || null;
+        let myNickname = '';
+        let myAvatarBase64 = null;
 
         const welcomeModalOverlay = document.getElementById('welcome-modal-overlay');
         const nicknameInput = document.getElementById('nickname-input');
@@ -2390,8 +2393,6 @@
         const usersPanelView = document.getElementById('users-panel-view');
         const dmProfilePanelView = document.getElementById('dm-profile-panel-view');
 
-        let myNickname = '';
-        let myAvatarBase64 = null;
         let isAdmin = false;
         let currentUsersData = {};
         let selectedTargetId = null;
@@ -3143,7 +3144,6 @@
 
         // --- SISTEMA DE AMIGOS Y LISTA LATERAL IZQUIERDA ---
         let friendsState = { friends: [], incoming: [], outgoing: [] };
-        let myUid = null;
         let friendsStateReady = false;
 
         const friendsSidebar = document.getElementById('friends-sidebar');
