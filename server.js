@@ -11,12 +11,17 @@ const io = new Server(server, {
     maxHttpBufferSize: 10e6 // 10 MB para soportar imágenes y avatares
 });
 
-app.use(express.static('public'));
+// Servir archivos estáticos resolviendo la ruta absoluta al directorio actual
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ============================================================
-// GIFs: proxy en el servidor
+// CONFIGURACIÓN DE SEGURIDAD Y ENTORNO
 // ============================================================
-const GIF_API_KEY = process.env.GIF_API_KEY || 'EqKveKya673SGDNK1vWqZlqCeczfAYPbRC3KDD9WDW8cVMQKPG6wTnMWcEoqOglk';
+// #1 Clave de administración segura en servidor
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin1509';
+
+// #3 Proxy de GIFs: No exponer claves de API por defecto en el código
+const GIF_API_KEY = process.env.GIF_API_KEY || '';
 const GIF_PROVIDER = (process.env.GIF_PROVIDER || 'klipy').toLowerCase();
 const GIF_PAGE_SIZE = 24;
 const GIF_CACHE_TTL = 5 * 60 * 1000;
@@ -24,6 +29,41 @@ const gifCache = new Map();
 
 function isHttps(u) {
     return typeof u === 'string' && /^https:\/\//i.test(u);
+}
+
+// #6 Permitir solo imágenes base64 o dominios confiables de proveedores oficiales
+function isAllowedImageUrl(url) {
+    if (typeof url !== 'string' || !url) return false;
+    // Data URL de imágenes estándar (base64 hasta ~5 MB)
+    if (/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(url)) {
+        return url.length <= 5500000;
+    }
+    // Dominios oficiales de GIFs autorizados
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:') return false;
+        const host = parsed.hostname.toLowerCase();
+        if (host === 'static.klipy.com' || host === 'giphy.com' || host.endsWith('.giphy.com')) {
+            return true;
+        }
+    } catch (e) {
+        return false;
+    }
+    return false;
+}
+
+// #7 Rate limiting básico en el servidor (máx 5 mensajes/segundo por socket)
+const socketRateLimits = new Map();
+function checkRateLimit(socketId, maxPerSec = 5) {
+    const now = Date.now();
+    let record = socketRateLimits.get(socketId);
+    if (!record || now - record.resetTime > 1000) {
+        record = { count: 1, resetTime: now };
+        socketRateLimits.set(socketId, record);
+        return true;
+    }
+    record.count++;
+    return record.count <= maxPerSec;
 }
 
 function normalizeKlipy(json) {
@@ -70,7 +110,9 @@ function normalizeGiphy(json, offset) {
 }
 
 app.get('/api/gifs', async (req, res) => {
-    if (!GIF_API_KEY) return res.status(503).json({ error: 'no-key' });
+    if (!GIF_API_KEY) {
+        return res.status(503).json({ error: 'no-key', message: 'Configura GIF_API_KEY en las variables de entorno para habilitar GIFs.' });
+    }
     if (typeof fetch !== 'function') return res.status(500).json({ error: 'node-too-old' });
 
     const q = String(req.query.q || '').trim().slice(0, 80);
@@ -135,6 +177,8 @@ function broadcastRecordingStatus() {
     io.emit('recording update', names);
 }
 
+// #7 Límites de almacenamiento en memoria
+const MAX_GLOBAL_MESSAGES = 200;
 let messageIdCounter = 0;
 const messagesStore = {};
 const privateMessagesStore = {}; // roomId -> Array de mensajes
@@ -146,29 +190,66 @@ function getDmRoomId(uid1, uid2) {
 function cleanName(n) { return String(n || '').replace(/[<>]/g, '').trim().slice(0, 24); }
 function cleanBio(b) { return String(b || '').replace(/[<>]/g, '').trim().slice(0, 200); }
 function cleanAvatar(a) {
-    return (typeof a === 'string' && a.startsWith('data:image/') && a.length <= 8000000) ? a : null;
+    return (typeof a === 'string' && a.startsWith('data:image/') && a.length <= 400000) ? a : null;
 }
 
 // ============================================================
-// AMIGOS & PERFILES
+// AMIGOS & PERFILES (CON PERSISTENCIA ATÓMICA - #14)
 // ============================================================
 const FRIENDS_FILE = process.env.FRIENDS_FILE || path.join(__dirname, 'friends-data.json');
 let profiles = {};
 const friendsMap = {};
 const requestsMap = {};
-const onlineByUid = {};
+
+// #11 Soporte multi-pestaña para conexión de usuarios (uid -> Set de socket.id)
+const userSocketsMap = new Map();
+
+function addSocketForUid(uid, socketId) {
+    if (!uid) return;
+    if (!userSocketsMap.has(uid)) userSocketsMap.set(uid, new Set());
+    userSocketsMap.get(uid).add(socketId);
+}
+
+function removeSocketForUid(uid, socketId) {
+    if (!uid) return;
+    if (userSocketsMap.has(uid)) {
+        const set = userSocketsMap.get(uid);
+        set.delete(socketId);
+        if (set.size === 0) userSocketsMap.delete(uid);
+    }
+}
+
+function isUidOnline(uid) {
+    const set = userSocketsMap.get(uid);
+    return !!(set && set.size > 0);
+}
+
+function emitToUid(uid, event, data) {
+    const set = userSocketsMap.get(uid);
+    if (set) {
+        for (const sid of set) {
+            io.to(sid).emit(event, data);
+        }
+    }
+}
 
 function uidFromToken(token) {
     return crypto.createHash('sha256').update('chat-uid:' + token).digest('hex').slice(0, 16);
 }
 
 function loadFriendsData() {
+    if (!fs.existsSync(FRIENDS_FILE)) return;
     try {
         const raw = JSON.parse(fs.readFileSync(FRIENDS_FILE, 'utf8'));
         profiles = raw.profiles || {};
         Object.entries(raw.friends || {}).forEach(([k, v]) => { friendsMap[k] = new Set(v); });
         Object.entries(raw.requests || {}).forEach(([k, v]) => { requestsMap[k] = new Set(v); });
-    } catch (e) {}
+    } catch (e) {
+        console.error('Error al cargar friends-data.json:', e.message);
+        try {
+            fs.copyFileSync(FRIENDS_FILE, FRIENDS_FILE + '.corrupt.' + Date.now());
+        } catch (backupErr) {}
+    }
 }
 loadFriendsData();
 
@@ -190,8 +271,18 @@ function saveFriendsData() {
             const p = profiles[id];
             if (p) outProfiles[id] = Object.assign({}, p, { avatar: (p.avatar && p.avatar.length <= 300000) ? p.avatar : null });
         });
-        fs.writeFile(FRIENDS_FILE, JSON.stringify({ profiles: outProfiles, friends, requests }), (err) => {
-            if (err) console.error('No se pudo guardar amigos:', err.message);
+
+        // #14 Escritura atómica mediante archivo temporal antes de renombrar
+        const payload = JSON.stringify({ profiles: outProfiles, friends, requests });
+        const tmpFile = FRIENDS_FILE + '.tmp.' + Date.now();
+        fs.writeFile(tmpFile, payload, 'utf8', (err) => {
+            if (err) {
+                console.error('No se pudo guardar amigos (tmp):', err.message);
+                return;
+            }
+            fs.rename(tmpFile, FRIENDS_FILE, (renameErr) => {
+                if (renameErr) console.error('No se pudo renombrar archivo de amigos atómicamente:', renameErr.message);
+            });
         });
     }, 600);
 }
@@ -203,15 +294,25 @@ function hasRelations(id) {
 }
 
 function friendStatus(id) {
-    const sid = onlineByUid[id];
-    const u = sid && users[sid];
-    return u ? (u.status || 'online') : 'offline';
+    const set = userSocketsMap.get(id);
+    if (set && set.size > 0) {
+        for (const sid of set) {
+            const u = users[sid];
+            if (u && u.status) return u.status;
+        }
+        return 'online';
+    }
+    return 'offline';
 }
 
 function friendEntry(id) {
     const p = profiles[id] || { nickname: 'Usuario' };
-    const sid = onlineByUid[id];
-    const src = (sid && users[sid]) || p;
+    const set = userSocketsMap.get(id);
+    let src = p;
+    if (set && set.size > 0) {
+        const firstSid = set.values().next().value;
+        if (users[firstSid]) src = users[firstSid];
+    }
     return {
         uid: id,
         nickname: src.nickname || 'Usuario',
@@ -237,8 +338,7 @@ function buildFriendsState(id) {
 }
 
 function pushFriendsState(id) {
-    const sid = onlineByUid[id];
-    if (sid) io.to(sid).emit('friends state', buildFriendsState(id));
+    emitToUid(id, 'friends state', buildFriendsState(id));
 }
 
 function notifyFriendsOf(id) {
@@ -247,8 +347,7 @@ function notifyFriendsOf(id) {
 }
 
 function notifyUid(id, text) {
-    const sid = onlineByUid[id];
-    if (sid) io.to(sid).emit('friend notice', { text });
+    emitToUid(id, 'friend notice', { text });
 }
 
 function acceptFriendship(me, other) {
@@ -287,6 +386,18 @@ function getUniqueColor() {
 }
 
 io.on('connection', (socket) => {
+    socket.isAdmin = false;
+
+    // #1 Autenticación de Administrador en el Servidor
+    socket.on('admin login', (attemptPass, callback) => {
+        const ok = typeof attemptPass === 'string' && attemptPass === ADMIN_PASSWORD;
+        socket.isAdmin = ok;
+        if (typeof callback === 'function') {
+            callback({ success: ok, message: ok ? 'Autenticado como administrador' : 'Contraseña incorrecta' });
+        }
+        socket.emit('admin auth status', { isAdmin: ok });
+    });
+
     socket.on('join', (userData) => {
         const nickname = (userData && userData.nickname) ? (cleanName(userData.nickname) || 'Anónimo') : 'Anónimo';
         const avatar = (userData && userData.avatar) ? cleanAvatar(userData.avatar) : null;
@@ -299,7 +410,7 @@ io.on('connection', (socket) => {
         const uid = uidFromToken(token);
         socket.uid = uid;
 
-        // Informar al cliente de inmediato cuál es su UID verificado
+        // Informar al cliente de su sesión verificada
         socket.emit('session', { uid: uid });
 
         let memberSince = Number(userData && userData.memberSince);
@@ -321,7 +432,8 @@ io.on('connection', (socket) => {
             uid: uid
         };
 
-        onlineByUid[uid] = socket.id;
+        // #11 Registrar socket en el mapa de sockets por UID
+        addSocketForUid(uid, socket.id);
         syncProfileFromSocket(socket.id);
 
         io.emit('system-message', `${socket.nickname} ha entrado al chat.`);
@@ -421,49 +533,64 @@ io.on('connection', (socket) => {
 
     // --- MENSAJES PÚBLICOS ---
     socket.on('chat message', (data) => {
-        if (users[socket.id]) {
-            messageIdCounter++;
-            const msgId = 'msg_' + messageIdCounter + '_' + Date.now();
-            
-            typingUsers.delete(socket.id);
-            broadcastTypingStatus();
-            if (recordingUsers.delete(socket.id)) broadcastRecordingStatus();
-
-            let image = data.image || null;
-            if (typeof image !== 'string' || !(image.startsWith('data:image/') || /^https:\/\//i.test(image))) {
-                image = null;
-            }
-
-            let audio = data.audio || null;
-            if (typeof audio !== 'string' || !audio.startsWith('data:audio/')) audio = null;
-
-            let waveform = null;
-            if (Array.isArray(data.waveform) && data.waveform.length > 0 && data.waveform.length <= 100) {
-                waveform = data.waveform.map(n => Math.min(100, Math.max(0, Math.round(Number(n) || 0))));
-            }
-            let duration = Number(data.duration);
-            duration = (isFinite(duration) && duration > 0 && duration < 3600) ? Math.round(duration * 10) / 10 : 0;
-
-            const msgData = {
-                id: msgId,
-                senderId: socket.id,
-                senderUid: users[socket.id].uid || null,
-                user: users[socket.id].nickname,
-                avatar: users[socket.id].avatar,
-                color: users[socket.id].color,
-                text: data.text || '',
-                image: image,
-                audio: audio,
-                waveform: audio ? waveform : null,
-                duration: audio ? duration : 0,
-                time: data.time,
-                replyTo: data.replyTo || null,
-                reactions: {}
-            };
-
-            messagesStore[msgId] = msgData;
-            io.emit('chat message', msgData);
+        if (!users[socket.id]) return;
+        // #7 Rate limit
+        if (!checkRateLimit(socket.id)) {
+            return socket.emit('rate-limit-warning', 'Estás enviando mensajes demasiado rápido.');
         }
+
+        messageIdCounter++;
+        const msgId = 'msg_' + messageIdCounter + '_' + Date.now();
+        
+        typingUsers.delete(socket.id);
+        broadcastTypingStatus();
+        if (recordingUsers.delete(socket.id)) broadcastRecordingStatus();
+
+        // #6 Validación de imagen
+        let image = isAllowedImageUrl(data && data.image) ? data.image : null;
+
+        let audio = (data && typeof data.audio === 'string' && data.audio.startsWith('data:audio/')) ? data.audio : null;
+
+        let waveform = null;
+        if (Array.isArray(data && data.waveform) && data.waveform.length > 0 && data.waveform.length <= 100) {
+            waveform = data.waveform.map(n => Math.min(100, Math.max(0, Math.round(Number(n) || 0))));
+        }
+        let duration = Number(data && data.duration);
+        duration = (isFinite(duration) && duration > 0 && duration < 3600) ? Math.round(duration * 10) / 10 : 0;
+
+        // #7 Limitar tamaño de texto a 2000 caracteres
+        const rawText = String((data && data.text) || '').slice(0, 2000);
+
+        const msgData = {
+            id: msgId,
+            senderId: socket.id,
+            senderUid: users[socket.id].uid || null,
+            user: users[socket.id].nickname,
+            avatar: users[socket.id].avatar,
+            color: users[socket.id].color,
+            text: rawText,
+            image: image,
+            audio: audio,
+            waveform: audio ? waveform : null,
+            duration: audio ? duration : 0,
+            time: data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            replyTo: (data && data.replyTo && typeof data.replyTo.user === 'string') ? {
+                user: cleanName(data.replyTo.user),
+                text: String(data.replyTo.text || '').slice(0, 500),
+                color: String(data.replyTo.color || '#888888').slice(0, 20)
+            } : null,
+            reactions: {}
+        };
+
+        // #7 Purga de mensajes antiguos en memoria
+        messagesStore[msgId] = msgData;
+        const allKeys = Object.keys(messagesStore);
+        if (allKeys.length > MAX_GLOBAL_MESSAGES) {
+            const toDelete = allKeys.slice(0, allKeys.length - MAX_GLOBAL_MESSAGES);
+            toDelete.forEach(k => delete messagesStore[k]);
+        }
+
+        io.emit('chat message', msgData);
     });
 
     // --- CHAT PRIVADO ---
@@ -481,24 +608,28 @@ io.on('connection', (socket) => {
         const u = users[socket.id];
         if (!me || !toUid || !u) return;
 
+        // #7 Rate limit
+        if (!checkRateLimit(socket.id)) {
+            return socket.emit('rate-limit-warning', 'Estás enviando mensajes demasiado rápido.');
+        }
+
         messageIdCounter++;
         const msgId = 'dm_' + messageIdCounter + '_' + Date.now();
         const roomId = getDmRoomId(me, toUid);
 
-        let image = data.image || null;
-        if (typeof image !== 'string' || !(image.startsWith('data:image/') || /^https:\/\//i.test(image))) {
-            image = null;
-        }
+        // #6 Validación de imagen
+        let image = isAllowedImageUrl(data && data.image) ? data.image : null;
 
-        let audio = data.audio || null;
-        if (typeof audio !== 'string' || !audio.startsWith('data:audio/')) audio = null;
+        let audio = (data && typeof data.audio === 'string' && data.audio.startsWith('data:audio/')) ? data.audio : null;
 
         let waveform = null;
-        if (Array.isArray(data.waveform) && data.waveform.length > 0 && data.waveform.length <= 100) {
+        if (Array.isArray(data && data.waveform) && data.waveform.length > 0 && data.waveform.length <= 100) {
             waveform = data.waveform.map(n => Math.min(100, Math.max(0, Math.round(Number(n) || 0))));
         }
-        let duration = Number(data.duration);
+        let duration = Number(data && data.duration);
         duration = (isFinite(duration) && duration > 0 && duration < 3600) ? Math.round(duration * 10) / 10 : 0;
+
+        const rawText = String((data && data.text) || '').slice(0, 2000);
 
         const msgData = {
             id: msgId,
@@ -508,13 +639,17 @@ io.on('connection', (socket) => {
             user: u.nickname,
             avatar: u.avatar,
             color: u.color,
-            text: data.text || '',
+            text: rawText,
             image: image,
             audio: audio,
             waveform: audio ? waveform : null,
             duration: audio ? duration : 0,
-            time: data.time,
-            replyTo: data.replyTo || null,
+            time: data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            replyTo: (data && data.replyTo && typeof data.replyTo.user === 'string') ? {
+                user: cleanName(data.replyTo.user),
+                text: String(data.replyTo.text || '').slice(0, 500),
+                color: String(data.replyTo.color || '#888888').slice(0, 20)
+            } : null,
             reactions: {}
         };
 
@@ -522,20 +657,16 @@ io.on('connection', (socket) => {
         privateMessagesStore[roomId].push(msgData);
         if (privateMessagesStore[roomId].length > 150) privateMessagesStore[roomId].shift();
 
-        // Enviar al emisor
-        socket.emit('private message', msgData);
+        // Enviar a todas las pestañas del emisor
+        emitToUid(me, 'private message', msgData);
 
-        // Enviar al destinatario
-        const destSocketId = onlineByUid[toUid];
-        if (destSocketId && destSocketId !== socket.id) {
-            io.to(destSocketId).emit('private message', msgData);
-        }
+        // Enviar a todas las pestañas del destinatario
+        emitToUid(toUid, 'private message', msgData);
     });
 
     socket.on('private typing', ({ targetUid, isTyping }) => {
-        const destSocketId = onlineByUid[targetUid];
-        if (destSocketId && users[socket.id]) {
-            io.to(destSocketId).emit('private typing update', {
+        if (users[socket.id]) {
+            emitToUid(targetUid, 'private typing update', {
                 fromUid: socket.uid,
                 fromName: users[socket.id].nickname,
                 isTyping: !!isTyping
@@ -544,9 +675,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('private recording', ({ targetUid, isRecording }) => {
-        const destSocketId = onlineByUid[targetUid];
-        if (destSocketId && users[socket.id]) {
-            io.to(destSocketId).emit('private recording update', {
+        if (users[socket.id]) {
+            emitToUid(targetUid, 'private recording update', {
                 fromUid: socket.uid,
                 fromName: users[socket.id].nickname,
                 isRecording: !!isRecording
@@ -587,58 +717,64 @@ io.on('connection', (socket) => {
             });
         }
 
-        const payload = { targetUid, msgId, reactions: msg.reactions };
-        socket.emit('update private reactions', payload);
-        const destSocketId = onlineByUid[targetUid];
-        if (destSocketId && destSocketId !== socket.id) {
-            io.to(destSocketId).emit('update private reactions', { targetUid: me, msgId, reactions: msg.reactions });
-        }
+        const payloadMe = { targetUid, msgId, reactions: msg.reactions };
+        const payloadOther = { targetUid: me, msgId, reactions: msg.reactions };
+        emitToUid(me, 'update private reactions', payloadMe);
+        emitToUid(targetUid, 'update private reactions', payloadOther);
     });
 
+    // #10 Solo el autor puede borrar su propio mensaje privado
     socket.on('delete private message', ({ targetUid, msgId }) => {
         const me = socket.uid;
         if (!me || !targetUid) return;
         const roomId = getDmRoomId(me, targetUid);
-        if (privateMessagesStore[roomId]) {
-            privateMessagesStore[roomId] = privateMessagesStore[roomId].filter(m => m.id !== msgId);
+        const list = privateMessagesStore[roomId] || [];
+        const msg = list.find(m => m.id === msgId);
+        if (!msg) return;
+
+        if (msg.senderUid !== me) {
+            return socket.emit('error notice', { message: 'Solo el autor puede eliminar este mensaje.' });
         }
-        socket.emit('private message deleted', { targetUid, msgId });
-        const destSocketId = onlineByUid[targetUid];
-        if (destSocketId) {
-            io.to(destSocketId).emit('private message deleted', { targetUid: me, msgId });
-        }
+
+        privateMessagesStore[roomId] = list.filter(m => m.id !== msgId);
+        emitToUid(me, 'private message deleted', { targetUid, msgId });
+        emitToUid(targetUid, 'private message deleted', { targetUid: me, msgId });
     });
 
+    // #10 Solo el autor puede editar su propio mensaje privado
     socket.on('edit private message', ({ targetUid, msgId, newText }) => {
         const me = socket.uid;
         if (!me || !targetUid) return;
         const roomId = getDmRoomId(me, targetUid);
         const msg = (privateMessagesStore[roomId] || []).find(m => m.id === msgId);
-        if (msg) msg.text = newText;
+        if (!msg) return;
 
-        socket.emit('private message edited', { targetUid, msgId, newText });
-        const destSocketId = onlineByUid[targetUid];
-        if (destSocketId) {
-            io.to(destSocketId).emit('private message edited', { targetUid: me, msgId, newText });
+        if (msg.senderUid !== me) {
+            return socket.emit('error notice', { message: 'Solo el autor puede editar este mensaje.' });
         }
+
+        msg.text = String(newText || '').slice(0, 2000);
+        emitToUid(me, 'private message edited', { targetUid, msgId, newText: msg.text });
+        emitToUid(targetUid, 'private message edited', { targetUid: me, msgId, newText: msg.text });
     });
 
-    // --- REACCIONES PÚBLICAS ---
+    // --- REACCIONES PÚBLICAS (#12 Por UID permanente para evitar duplicados en recarga) ---
     socket.on('add reaction', ({ msgId, emoji }) => {
         const user = users[socket.id];
         const msg = messagesStore[msgId];
-        if (user && msg) {
+        const myUid = socket.uid;
+        if (user && msg && myUid) {
             if (!msg.reactions) msg.reactions = {};
 
             let alreadyReacted = false;
             Object.keys(msg.reactions).forEach(e => {
                 msg.reactions[e] = msg.reactions[e].filter(item => {
-                    if (item.id === socket.id && e === emoji) {
+                    const itemUid = item.uid || item.id;
+                    if (itemUid === myUid && e === emoji) {
                         alreadyReacted = true;
                         return false;
                     }
-                    if (item.id === socket.id) return false;
-                    return true;
+                    return itemUid !== myUid;
                 });
                 if (msg.reactions[e].length === 0) delete msg.reactions[e];
             });
@@ -647,6 +783,7 @@ io.on('connection', (socket) => {
                 if (!msg.reactions[emoji]) msg.reactions[emoji] = [];
                 msg.reactions[emoji].push({
                     id: socket.id,
+                    uid: myUid,
                     nickname: user.nickname,
                     avatar: user.avatar,
                     color: user.color
@@ -679,22 +816,40 @@ io.on('connection', (socket) => {
         broadcastRecordingStatus();
     });
 
+    // #1 Verificación en servidor: solo el autor o un admin verificado puede borrar
     socket.on('delete message', (msgId) => {
+        const msg = messagesStore[msgId];
+        if (!msg) return;
+        const isOwner = (msg.senderUid && msg.senderUid === socket.uid) || msg.senderId === socket.id;
+        if (!isOwner && !socket.isAdmin) {
+            return socket.emit('error notice', { message: 'No tienes permiso para borrar este mensaje.' });
+        }
         delete messagesStore[msgId];
         io.emit('message deleted', msgId);
     });
 
+    // #1 Verificación en servidor: solo el autor o un admin verificado puede editar
     socket.on('edit message', ({ msgId, newText }) => {
-        if (messagesStore[msgId]) messagesStore[msgId].text = newText;
-        io.emit('message edited', { msgId, newText });
+        const msg = messagesStore[msgId];
+        if (!msg) return;
+        const isOwner = (msg.senderUid && msg.senderUid === socket.uid) || msg.senderId === socket.id;
+        if (!isOwner && !socket.isAdmin) {
+            return socket.emit('error notice', { message: 'No tienes permiso para editar este mensaje.' });
+        }
+        msg.text = String(newText || '').slice(0, 2000);
+        io.emit('message edited', { msgId, newText: msg.text });
     });
 
+    // #1 Verificación en servidor: solo administrador verificado puede modificar usuarios
     socket.on('admin update user', ({ targetId, newName, newColor }) => {
+        if (!socket.isAdmin) {
+            return socket.emit('error notice', { message: 'Se requiere rol de administrador.' });
+        }
         if (users[targetId]) {
             if (newName && newName.trim() !== '') {
-                users[targetId].nickname = newName.trim();
+                users[targetId].nickname = cleanName(newName);
                 const targetSocket = io.sockets.sockets.get(targetId);
-                if (targetSocket) targetSocket.nickname = newName.trim();
+                if (targetSocket) targetSocket.nickname = users[targetId].nickname;
             }
             if (newColor) {
                 users[targetId].color = newColor;
@@ -706,11 +861,15 @@ io.on('connection', (socket) => {
         }
     });
 
+    // #1 Verificación en servidor: solo administrador verificado puede expulsar
     socket.on('kick user', ({ targetId, adminName }) => {
+        if (!socket.isAdmin) {
+            return socket.emit('error notice', { message: 'Se requiere rol de administrador.' });
+        }
         if (users[targetId]) {
             const targetSocket = io.sockets.sockets.get(targetId);
             if (targetSocket) {
-                targetSocket.emit('kicked', adminName);
+                targetSocket.emit('kicked', adminName || 'Administrador');
                 targetSocket.disconnect(true);
             }
         }
@@ -719,20 +878,26 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         if (users[socket.id]) {
             const name = users[socket.id].nickname;
+            const leavingUid = users[socket.id].uid;
+            
             typingUsers.delete(socket.id);
             broadcastTypingStatus();
             recordingUsers.delete(socket.id);
-
-            const leavingUid = users[socket.id].uid;
-            delete users[socket.id];
             broadcastRecordingStatus();
+            socketRateLimits.delete(socket.id);
 
-            if (leavingUid && onlineByUid[leavingUid] === socket.id) {
-                delete onlineByUid[leavingUid];
+            delete users[socket.id];
+
+            // #11 Desconectar del mapa multi-pestaña
+            removeSocketForUid(leavingUid, socket.id);
+
+            // Solo si no quedan otras pestañas abiertas de este UID, marcar como desconectado
+            if (leavingUid && !isUidOnline(leavingUid)) {
                 if (profiles[leavingUid]) profiles[leavingUid].lastSeen = Date.now();
                 if (hasRelations(leavingUid)) saveFriendsData();
                 notifyFriendsOf(leavingUid);
             }
+
             io.emit('system-message', `${name} ha salido del chat.`);
             io.emit('update-users', users);
         }

@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Runtime and local database files
+friends-data.json
+*.log
+*.patch
+
+# Environment variables
+.env
+.env.local
+
+# OS metadata
+.DS_Store
+Thumbs.db
+bun.lock*
+
+# AI Studio internal artifacts
+.aistudio/
+

@@ -567,6 +567,31 @@
             pointer-events: none;
         }
 
+        @keyframes sentBubble {
+            from { opacity: 0; transform: translateY(10px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes receivedBubble {
+            from { opacity: 0; transform: translateY(10px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes dissolveOut {
+            from { opacity: 1; transform: scale(1); max-height: 200px; }
+            to { opacity: 0; transform: scale(0.9); max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; }
+        }
+
+        @keyframes slideDownReply {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes bounceDot {
+            0%, 80%, 100% { transform: scale(0); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
         .msg-content-wrapper {
             position: relative;
             display: flex;
@@ -2217,6 +2242,73 @@
     <script>
         const socket = io();
 
+        // ====== SEGURIDAD Y HELPERS (#2, #5, #6) ======
+        function escapeHtml(str) {
+            if (typeof str !== 'string') return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function escapeRegex(str) {
+            return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function isAllowedImageUrl(url) {
+            if (typeof url !== 'string' || !url) return false;
+            if (/^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(url)) {
+                return url.length <= 5500000;
+            }
+            try {
+                const parsed = new URL(url);
+                if (parsed.protocol !== 'https:') return false;
+                const host = parsed.hostname.toLowerCase();
+                return host === 'static.klipy.com' || host === 'giphy.com' || host.endsWith('.giphy.com');
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Shared AudioContext para evitar fugas de memoria y bloqueos del navegador
+        let sharedAudioCtx = null;
+        function getSharedAudioContext() {
+            try {
+                if (!sharedAudioCtx || sharedAudioCtx.state === 'closed') {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) sharedAudioCtx = new AudioCtx();
+                }
+                if (sharedAudioCtx && sharedAudioCtx.state === 'suspended') {
+                    sharedAudioCtx.resume().catch(() => {});
+                }
+                return sharedAudioCtx;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // #4 Re-enviar join tras reconexión para que el servidor siempre reconozca al socket
+        socket.on('connect', () => {
+            if (myNickname) {
+                socket.emit('join', buildJoinPayload());
+            }
+        });
+
+        socket.on('session', ({ uid }) => {
+            myUid = uid;
+            localStorage.setItem('chat_uid', uid);
+        });
+
+        socket.on('error notice', ({ message }) => {
+            showToast(message || 'Error en la acción solicitada');
+        });
+
+        socket.on('rate-limit-warning', (msg) => {
+            showToast('⚠️ ' + msg);
+        });
+
         // Control de canales: null = Chat Global, string = UID del amigo en privado
         let currentDmUser = null;
         let globalMessagesBackup = [];
@@ -2331,7 +2423,8 @@
         function triggerHapticFeedback(frequency = 600, duration = 0.08) {
             if (navigator.vibrate) navigator.vibrate(40);
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const ctx = getSharedAudioContext();
+                if (!ctx) return;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
@@ -2757,7 +2850,8 @@
         nicknameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') joinChat(); });
 
         logoutBtn.addEventListener('click', () => {
-            localStorage.clear();
+            // #8 Cerrar sesión preservando la identidad criptográfica y amistades
+            localStorage.removeItem('chat_nickname');
             window.location.reload();
         });
 
@@ -2958,6 +3052,11 @@
 
         // ====== CAMBIAR ENTRE CHAT GLOBAL Y CHAT PRIVADO ======
         function switchToGlobalChat() {
+            // #13 Limpiar estado de respuesta y grabación al cambiar de canal
+            if (isRecording) stopRecording(true);
+            replyingTo = null;
+            if (replyPreviewContainer) replyPreviewContainer.style.display = 'none';
+
             currentDmUser = null;
             currentChannelTitle.textContent = 'Chat Online';
             btnGlobalChat.classList.add('active');
@@ -2977,6 +3076,11 @@
 
         function switchToDmChat(friendData, uid) {
             if (!uid) return;
+            // #13 Limpiar estado de respuesta y grabación al cambiar de canal
+            if (isRecording) stopRecording(true);
+            replyingTo = null;
+            if (replyPreviewContainer) replyPreviewContainer.style.display = 'none';
+
             currentDmUser = Object.assign({}, friendData, { uid: uid });
 
             btnGlobalChat.classList.remove('active');
@@ -2984,7 +3088,7 @@
                 el.classList.toggle('active', el.dataset.uid === uid);
             });
 
-            currentChannelTitle.textContent = `💬 ${currentDmUser.nickname}`;
+            currentChannelTitle.textContent = `💬 ${escapeHtml(currentDmUser.nickname)}`;
 
             // Configurar panel derecho como Perfil del Amigo
             usersPanelView.style.display = 'none';
@@ -2999,6 +3103,8 @@
         function renderDmProfileRight(p) {
             const color = safeColor(p.color);
             const status = p.status || 'offline';
+            const safeNick = escapeHtml(p.nickname || 'Usuario');
+            const safeBio = p.bio ? escapeHtml(p.bio) : '';
             dmProfilePanelView.style.setProperty('--pc', color);
 
             dmProfilePanelView.innerHTML = `
@@ -3008,7 +3114,7 @@
                 </div>
                 <div class="profile-body">
                     <div class="profile-name-row">
-                        <span class="profile-name" style="font-size: 1.15rem; color: ${color};">${p.nickname}</span>
+                        <span class="profile-name" style="font-size: 1.15rem; color: ${color};">${safeNick}</span>
                     </div>
                     <div class="profile-chips">
                         <span class="profile-chip"><span class="status-icon ${status}"></span><span>${STATUS_LABELS[status] || 'En línea'}</span></span>
@@ -3016,7 +3122,7 @@
                     <div class="profile-divider"></div>
                     <div class="profile-section">
                         <h4>Sobre mí</h4>
-                        <p style="font-size: 0.85rem;">${p.bio ? p.bio : '<i style="color:var(--text-sub)">Sin descripción</i>'}</p>
+                        <p style="font-size: 0.85rem;">${safeBio ? safeBio : '<i style="color:var(--text-sub)">Sin descripción</i>'}</p>
                     </div>
                     <div class="profile-divider"></div>
                     <div class="profile-section">
@@ -3477,7 +3583,8 @@
         function playMessageSound() {
             if (currentStatus === 'dnd') return;
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const ctx = getSharedAudioContext();
+                if (!ctx) return;
                 const osc = ctx.createOscillator();
                 const gain = ctx.createGain();
                 osc.type = 'sine';
@@ -3683,10 +3790,17 @@
 
         function formatMentions(text) {
             if (!text) return '';
-            let formattedText = text.replace(/@everyone\b/gi, `<span class="mention-tag everyone">@everyone</span>`);
+            // #2 Escapar HTML primero para prevenir inyección de código
+            let formattedText = escapeHtml(text);
+            formattedText = formattedText.replace(/@everyone\b/gi, `<span class="mention-tag everyone">@everyone</span>`);
             Object.values(currentUsersData).forEach(u => {
-                const reg = new RegExp(`@${u.nickname}\\b`, 'gi');
-                formattedText = formattedText.replace(reg, `<span class="mention-tag">@${u.nickname}</span>`);
+                if (!u || !u.nickname) return;
+                try {
+                    // #5 Escapar caracteres especiales del apodo para no romper la expresión regular
+                    const safeNick = escapeRegex(escapeHtml(u.nickname));
+                    const reg = new RegExp(`@${safeNick}(?=\\s|$|[.,!?])`, 'gi');
+                    formattedText = formattedText.replace(reg, `<span class="mention-tag">@${escapeHtml(u.nickname)}</span>`);
+                } catch (e) {}
             });
             return formattedText;
         }
@@ -3704,16 +3818,21 @@
             item.className = isMe ? 'sent-msg' : 'received-msg';
 
             const showOwnerAdminOpts = isMe || isAdmin;
-            const initial = data.user ? data.user.charAt(0).toUpperCase() : '?';
-            const userAvatarHtml = data.avatar ? 
-                `<img src="${data.avatar}" class="user-avatar" title="${data.user}">` : 
-                `<div class="user-avatar" style="background-color: ${data.color}">${initial}</div>`;
+            const safeUser = escapeHtml(data.user || 'Anónimo');
+            const safeUserColor = safeColor(data.color);
+            const safeTime = escapeHtml(data.time || '');
+            const initial = safeUser ? safeUser.charAt(0).toUpperCase() : '?';
+            const userAvatarHtml = (data.avatar && isAllowedImageUrl(data.avatar)) ? 
+                `<img src="${encodeURI(data.avatar)}" class="user-avatar" title="${safeUser}">` : 
+                `<div class="user-avatar" style="background-color: ${safeUserColor}">${initial}</div>`;
 
             let replyHtml = '';
             if (data.replyTo) {
+                const safeReplyColor = safeColor(data.replyTo.color);
+                const safeReplyUser = escapeHtml(data.replyTo.user || '');
                 replyHtml = `
-                    <div class="replied-quote" style="border-left-color: ${data.replyTo.color}">
-                        <span style="font-weight:bold; color:${data.replyTo.color}">${data.replyTo.user}</span>
+                    <div class="replied-quote" style="border-left-color: ${safeReplyColor}">
+                        <span style="font-weight:bold; color:${safeReplyColor}">${safeReplyUser}</span>
                         <span>${formatMentions(data.replyTo.text)}</span>
                     </div>
                 `;
@@ -3721,17 +3840,17 @@
 
             const formattedMessageText = formatMentions(data.text);
             const imageIsGif = isGifUrl(data.image);
-            const imageHtml = data.image ? `<img src="${data.image}" class="msg-image${imageIsGif ? ' msg-gif' : ''}" onclick="openImageViewer(this.src)" />` : '';
+            const imageHtml = (data.image && isAllowedImageUrl(data.image)) ? `<img src="${encodeURI(data.image)}" class="msg-image${imageIsGif ? ' msg-gif' : ''}" onclick="openImageViewer(this.src)" />` : '';
             const audioHtml = data.audio ? buildVoicePlayerHtml(data) : '';
 
             item.innerHTML = `
                 ${userAvatarHtml}
                 <div class="msg-content-wrapper">
-                    <div class="msg-bubble ${data.image ? 'has-image' : ''}" style="background-color: ${data.color}">
+                    <div class="msg-bubble ${data.image ? 'has-image' : ''}" style="background-color: ${safeUserColor}">
                         <div class="msg-info">
-                            <span><strong>${data.user}</strong></span>
+                            <span><strong>${safeUser}</strong></span>
                             <div style="display: flex; align-items: center; gap: 5px;">
-                                <span>${data.time}</span>
+                                <span>${safeTime}</span>
                                 <div class="msg-menu-container">
                                     <button class="menu-dots-btn" title="Opciones">⋮</button>
                                     <div class="dropdown-menu">
@@ -3802,7 +3921,9 @@
                     menuDropdown.classList.remove('show');
                     selectedMsgId = data.id;
                     const textContentEl = item.querySelector('.msg-text-content');
-                    editMsgInput.value = textContentEl ? textContentEl.innerText : '';
+                    // #Bajos: Quitar etiqueta (editado) para no arrastrarla en la edición
+                    let raw = textContentEl ? textContentEl.innerText.replace(/\s*\(editado\)\s*$/, '') : '';
+                    editMsgInput.value = raw;
                     editMsgModal.style.display = 'flex';
                 });
             }
@@ -3828,7 +3949,8 @@
             const item = renderMessageNode(data, false);
             globalMessagesBackup.push(item);
             if (!currentDmUser) {
-                playMessageSound();
+                const isMe = (data.senderId === socket.id) || (data.senderUid && data.senderUid === myUid);
+                if (!isMe) playMessageSound();
                 messages.appendChild(item);
                 messages.scrollTop = messages.scrollHeight;
             }
@@ -3845,18 +3967,24 @@
 
         // NUEVO MENSAJE PRIVADO
         socket.on('private message', (data) => {
-            playMessageSound();
+            const isMe = (data.senderId === socket.id) || (data.senderUid && data.senderUid === myUid);
+            if (!isMe) playMessageSound();
             const otherUid = (data.senderUid === myUid) ? data.targetUid : data.senderUid;
             if (currentDmUser && currentDmUser.uid === otherUid) {
                 messages.appendChild(renderMessageNode(data, true));
                 messages.scrollTop = messages.scrollHeight;
-            } else {
-                showToast(`Nuevo mensaje privado de ${data.user}`);
+            } else if (!isMe) {
+                showToast(`Nuevo mensaje privado de ${escapeHtml(data.user)}`);
             }
         });
 
-        // REACCIONES
-        socket.on('update reactions', ({ msgId, reactions }) => updateMessageReactions(msgId, reactions));
+        // REACCIONES (#9 Sincronizar backup al estar en DM)
+        socket.on('update reactions', ({ msgId, reactions }) => {
+            const backupNode = globalMessagesBackup.find(n => n.id === msgId);
+            if (backupNode) updateMessageReactions(msgId, reactions, backupNode);
+            const domEl = document.getElementById(msgId);
+            if (domEl && domEl !== backupNode) updateMessageReactions(msgId, reactions, domEl);
+        });
         socket.on('update private reactions', ({ msgId, reactions }) => updateMessageReactions(msgId, reactions));
 
         function updateMessageReactions(msgId, reactions, scopeEl) {
@@ -3870,7 +3998,7 @@
                 const pill = document.createElement('div');
                 pill.className = 'reaction-pill';
                 if (usersList.some(u => u.uid === myUid || u.id === socket.id)) pill.classList.add('user-reacted');
-                pill.setAttribute('data-tooltip', usersList.map(u => u.nickname).join(', '));
+                pill.setAttribute('data-tooltip', usersList.map(u => escapeHtml(u.nickname)).join(', '));
                 pill.innerHTML = `<span>${emoji}</span> <span style="font-size:0.75rem; font-weight:bold;">${usersList.length}</span>`;
                 pill.addEventListener('click', () => {
                     if (currentDmUser) {
@@ -3883,7 +4011,9 @@
             });
         }
 
+        // #9 Eliminar mensaje del backup para que no reaparezca al volver de un DM
         socket.on('message deleted', (msgId) => {
+            globalMessagesBackup = globalMessagesBackup.filter(n => n.id !== msgId);
             const el = document.getElementById(msgId);
             if (el) { el.classList.add('dissolving'); setTimeout(() => el.remove(), 500); }
         });
@@ -3892,9 +4022,15 @@
             if (el) { el.classList.add('dissolving'); setTimeout(() => el.remove(), 500); }
         });
 
+        // #9 Actualizar mensaje en backup y en DOM
         socket.on('message edited', ({ msgId, newText }) => {
+            const backupNode = globalMessagesBackup.find(n => n.id === msgId);
+            if (backupNode) {
+                const c = backupNode.querySelector('.msg-text-content');
+                if (c) c.innerHTML = formatMentions(newText) + ' <span class="edited-tag">(editado)</span>';
+            }
             const el = document.getElementById(msgId);
-            if (el) {
+            if (el && el !== backupNode) {
                 const c = el.querySelector('.msg-text-content');
                 if (c) c.innerHTML = formatMentions(newText) + ' <span class="edited-tag">(editado)</span>';
             }
@@ -3946,15 +4082,17 @@
                 const leftDiv = document.createElement('div');
                 leftDiv.className = 'user-left';
 
-                const initial = uData.nickname ? uData.nickname.charAt(0).toUpperCase() : '?';
-                const avatarHtml = uData.avatar ? 
-                    `<img src="${uData.avatar}" class="user-avatar">` : 
-                    `<div class="user-avatar" style="background-color: ${uData.color}">${initial}</div>`;
+                const safeNick = escapeHtml(uData.nickname || 'Anónimo');
+                const safeColorVal = safeColor(uData.color);
+                const initial = safeNick ? safeNick.charAt(0).toUpperCase() : '?';
+                const avatarHtml = (uData.avatar && isAllowedImageUrl(uData.avatar)) ? 
+                    `<img src="${encodeURI(uData.avatar)}" class="user-avatar">` : 
+                    `<div class="user-avatar" style="background-color: ${safeColorVal}">${initial}</div>`;
 
                 leftDiv.innerHTML = `
                     ${avatarHtml}
                     <span class="status-icon ${uData.status || 'online'}"></span>
-                    <span style="color: ${uData.color}; font-weight: bold;">${uData.nickname}</span>
+                    <span style="color: ${safeColorVal}; font-weight: bold;">${safeNick}</span>
                 `;
                 li.appendChild(leftDiv);
                 leftDiv.addEventListener('click', () => openProfile(id));
@@ -4024,12 +4162,33 @@
 
         adminTrigger.addEventListener('click', () => { if (!isAdmin) adminModal.style.display = 'flex'; });
         adminCloseBtn.addEventListener('click', () => adminModal.style.display = 'none');
+        
+        // #1 Verificación segura en el servidor de las credenciales de administrador
         adminLoginBtn.addEventListener('click', () => {
-            if (adminPassInput.value === '1509') {
-                isAdmin = true;
-                adminModal.style.display = 'none';
+            const pass = adminPassInput.value;
+            if (!pass) return;
+            socket.emit('admin login', pass, (res) => {
+                if (res && res.success) {
+                    isAdmin = true;
+                    adminModal.style.display = 'none';
+                    adminPassInput.value = '';
+                    adminTrigger.textContent = 'Admin: ACTIVO';
+                    adminTrigger.style.color = '#28a745';
+                    showToast('Modo administrador verificado');
+                } else {
+                    alert(res && res.message ? res.message : 'Contraseña incorrecta');
+                }
+            });
+        });
+
+        socket.on('admin auth status', ({ isAdmin: ok }) => {
+            isAdmin = !!ok;
+            if (isAdmin) {
                 adminTrigger.textContent = 'Admin: ACTIVO';
                 adminTrigger.style.color = '#28a745';
+            } else {
+                adminTrigger.textContent = 'Admin Access';
+                adminTrigger.style.color = '';
             }
         });
 
