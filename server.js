@@ -177,6 +177,34 @@ function broadcastRecordingStatus() {
     io.emit('recording update', names);
 }
 
+// ============================================================
+// CANAL DE VOZ EN VIVO (VOICE CHANNEL / WebRTC Signaling)
+// ============================================================
+const voiceUsers = new Map(); // socket.id -> { socketId, uid, nickname, avatar, color, isMuted, isDeafened, isSpeaking }
+
+function broadcastVcSummary() {
+    const list = Array.from(voiceUsers.values()).map(u => ({
+        socketId: u.socketId,
+        uid: u.uid,
+        nickname: u.nickname,
+        avatar: u.avatar,
+        color: u.color,
+        isMuted: !!u.isMuted,
+        isDeafened: !!u.isDeafened,
+        isSpeaking: !!u.isSpeaking
+    }));
+    io.emit('vc:room-summary', list);
+}
+
+function handleVcLeave(socket) {
+    if (voiceUsers.has(socket.id)) {
+        voiceUsers.delete(socket.id);
+        socket.leave('voice-room-general');
+        socket.to('voice-room-general').emit('vc:user-left', { socketId: socket.id });
+        broadcastVcSummary();
+    }
+}
+
 // #7 Límites de almacenamiento en memoria
 const MAX_GLOBAL_MESSAGES = 200;
 let messageIdCounter = 0;
@@ -875,7 +903,70 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- CANAL DE VOZ (VC) EVENTOS ---
+    socket.emit('vc:room-summary', Array.from(voiceUsers.values()));
+
+    socket.on('vc:join', (data) => {
+        const u = users[socket.id] || {};
+        const memberInfo = {
+            socketId: socket.id,
+            uid: socket.uid || (data && data.uid) || 'anon',
+            nickname: u.nickname || (data && data.nickname) || 'Usuario',
+            avatar: u.avatar || (data && data.avatar) || null,
+            color: u.color || (data && data.color) || '#007bff',
+            isMuted: !!(data && data.isMuted),
+            isDeafened: !!(data && data.isDeafened),
+            isSpeaking: false
+        };
+
+        const existingUsers = Array.from(voiceUsers.values());
+        voiceUsers.set(socket.id, memberInfo);
+        socket.join('voice-room-general');
+
+        socket.emit('vc:existing-users', existingUsers);
+        socket.to('voice-room-general').emit('vc:user-joined', memberInfo);
+        broadcastVcSummary();
+    });
+
+    socket.on('vc:signal', ({ target, signal }) => {
+        if (!target || !signal) return;
+        io.to(target).emit('vc:signal', {
+            sender: socket.id,
+            signal: signal
+        });
+    });
+
+    socket.on('vc:state-update', (state) => {
+        const member = voiceUsers.get(socket.id);
+        if (member) {
+            if (typeof state.isMuted === 'boolean') member.isMuted = state.isMuted;
+            if (typeof state.isDeafened === 'boolean') member.isDeafened = state.isDeafened;
+            socket.to('voice-room-general').emit('vc:user-updated', {
+                socketId: socket.id,
+                isMuted: member.isMuted,
+                isDeafened: member.isDeafened
+            });
+            broadcastVcSummary();
+        }
+    });
+
+    socket.on('vc:speaking', ({ isSpeaking }) => {
+        const member = voiceUsers.get(socket.id);
+        if (member) {
+            member.isSpeaking = !!isSpeaking;
+            socket.to('voice-room-general').emit('vc:user-speaking', {
+                socketId: socket.id,
+                isSpeaking: member.isSpeaking
+            });
+        }
+    });
+
+    socket.on('vc:leave', () => {
+        handleVcLeave(socket);
+    });
+
     socket.on('disconnect', () => {
+        handleVcLeave(socket);
         if (users[socket.id]) {
             const name = users[socket.id].nickname;
             const leavingUid = users[socket.id].uid;

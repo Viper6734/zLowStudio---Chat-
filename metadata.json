@@ -1,0 +1,7 @@
+{
+  "name": "zLowStudio Chat",
+  "description": "Real-time chat web application with voice notes, friends system, direct messaging, themes, and emojis powered by Node.js and Socket.IO.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

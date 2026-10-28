@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Online</title>
+    <title>zLowStudio Chat</title>
+    <meta name="description" content="Real-time chat web application with voice notes, friends system, direct messaging, themes, and emojis powered by Node.js and Socket.IO.">
+    <meta property="og:title" content="zLowStudio Chat">
+    <meta property="og:description" content="Real-time chat web application with voice notes, friends system, direct messaging, themes, and emojis powered by Node.js and Socket.IO.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
@@ -1139,6 +1142,389 @@
             box-shadow: 0 4px 12px var(--glow-color);
         }
 
+        /* --- CANAL DE VOZ (VC) ESTILOS --- */
+        .sidebar-section-title {
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-sub);
+            padding: 0 4px 6px;
+        }
+
+        .vc-sidebar-channel-container {
+            margin-bottom: 12px;
+        }
+
+        .vc-channel-btn {
+            margin-bottom: 4px;
+        }
+
+        .vc-user-count-badge {
+            background: rgba(46, 213, 115, 0.2);
+            color: #2ed573;
+            border: 1px solid rgba(46, 213, 115, 0.4);
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+
+        .vc-sidebar-users {
+            list-style: none;
+            padding: 2px 0 6px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .vc-sidebar-user-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 6px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            transition: all 0.2s;
+        }
+
+        .vc-sidebar-user-item.speaking {
+            color: var(--text-main);
+            background: rgba(46, 213, 115, 0.1);
+        }
+
+        .vc-sidebar-user-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: 800;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .vc-sidebar-user-item.speaking .vc-sidebar-user-avatar {
+            border-color: #2ed573;
+            box-shadow: 0 0 8px #2ed573;
+        }
+
+        .vc-sidebar-user-icons {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+        }
+
+        /* Barra de estado de voz cuando estás en VC */
+        .vc-connected-bar {
+            margin-top: auto;
+            background: #111a24;
+            border: 1px solid rgba(46, 213, 115, 0.35);
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+        }
+
+        .vc-connected-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .vc-pulse-dot {
+            width: 9px;
+            height: 9px;
+            background: #2ed573;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #2ed573;
+            animation: vcDotPulse 1.5s infinite;
+        }
+
+        @keyframes vcDotPulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.7; }
+        }
+
+        .vc-connected-texts {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        .vc-connected-title {
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: #2ed573;
+        }
+
+        .vc-connected-sub {
+            font-size: 0.68rem;
+            color: var(--text-sub);
+        }
+
+        .vc-connected-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            gap: 6px;
+        }
+
+        .vc-icon-btn {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 8px;
+            padding: 6px 0;
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .vc-icon-btn:hover { background: rgba(255,255,255,0.08); border-color: var(--accent-blue); }
+        .vc-icon-btn.active-muted {
+            background: rgba(220, 53, 69, 0.2);
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+        .vc-icon-btn.vc-danger {
+            background: rgba(220, 53, 69, 0.15);
+            border-color: rgba(220, 53, 69, 0.4);
+        }
+        .vc-icon-btn.vc-danger:hover {
+            background: #dc3545;
+            color: #ffffff;
+        }
+
+        /* VISTA PRINCIPAL DEL CANAL DE VOZ */
+        .vc-stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .vc-stage-title h2 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .vc-stage-desc {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        .vc-join-btn {
+            padding: 9px 20px;
+            font-size: 0.9rem;
+            background: #28a745;
+            border-color: #28a745;
+            box-shadow: 0 4px 14px rgba(40, 167, 69, 0.35);
+        }
+        .vc-join-btn:hover { background: #218838; }
+
+        .vc-grid-container {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 14px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            position: relative;
+            min-height: 250px;
+        }
+
+        .vc-empty-notice {
+            text-align: center;
+            color: var(--text-sub);
+        }
+        .vc-empty-notice h3 {
+            font-size: 1.2rem;
+            color: var(--text-main);
+            margin-bottom: 6px;
+        }
+        .vc-empty-notice p {
+            font-size: 0.88rem;
+        }
+
+        .vc-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+            width: 100%;
+            height: 100%;
+            align-content: center;
+        }
+
+        .vc-user-card {
+            background: var(--bg-modal);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 18px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+        }
+
+        .vc-user-card.speaking {
+            border-color: #2ed573;
+            box-shadow: 0 0 20px rgba(46, 213, 115, 0.45);
+            transform: translateY(-2px);
+        }
+
+        .vc-card-avatar-wrap {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 12px;
+        }
+
+        .vc-card-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--bg-input);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 800;
+            border: 3px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .vc-user-card.speaking .vc-card-avatar {
+            border-color: #2ed573;
+            box-shadow: 0 0 16px #2ed573;
+        }
+
+        .vc-card-status-badge {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: rgba(0,0,0,0.85);
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            border: 2px solid var(--bg-modal);
+        }
+
+        .vc-card-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 4px;
+        }
+
+        .vc-card-tag {
+            font-size: 0.72rem;
+            color: var(--text-sub);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .vc-live-indicator {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #2ed573;
+        }
+
+        .vc-bottom-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 18px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        .vc-toolbar-stats {
+            font-size: 0.78rem;
+            color: var(--text-sub);
+        }
+
+        .vc-toolbar-buttons {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .vc-stage-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg-modal);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .vc-stage-btn:hover {
+            background: var(--hover-bg);
+            border-color: var(--accent-blue);
+        }
+
+        .vc-stage-btn.active-muted {
+            background: rgba(220, 53, 69, 0.2);
+            border-color: #dc3545;
+            color: #dc3545;
+        }
+
+        .vc-stage-btn-danger {
+            background: rgba(220, 53, 69, 0.15);
+            border-color: rgba(220, 53, 69, 0.4);
+            color: #ff6b81;
+        }
+
+        .vc-stage-btn-danger:hover {
+            background: #dc3545;
+            border-color: #dc3545;
+            color: #ffffff;
+        }
+
         .friends-header {
             padding: 0 6px 10px;
             border-bottom: 1px solid var(--border-color);
@@ -2016,6 +2402,33 @@
         </div>
     </div>
 
+    <!-- Modal de Permisos de Micrófono / Modo Oyente -->
+    <div id="mic-permission-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-box" style="max-width: 440px; text-align: left;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                <span style="font-size: 1.8rem;">🎙️</span>
+                <h2 style="font-size: 1.25rem; margin: 0; color: var(--text-main);">Permiso de Micrófono</h2>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--text-sub); line-height: 1.5; margin-bottom: 14px;">
+                El navegador no pudo acceder al micrófono (<span id="mic-error-desc" style="color: #ff6b81; font-weight: 600;">Permiso denegado</span>).
+            </p>
+            <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px; margin-bottom: 16px; font-size: 0.82rem; line-height: 1.5; color: var(--text-main);">
+                <strong>💡 ¿Cómo activarlo en tu navegador?</strong>
+                <ol style="margin-left: 18px; margin-top: 6px; color: var(--text-sub);">
+                    <li>Haz clic en el ícono de candado o permisos 🔒 en la barra de direcciones de tu navegador.</li>
+                    <li>Busca la opción <strong>Micrófono</strong> y cámbiala a <strong>Permitir</strong>.</li>
+                    <li>Vuelve a pulsar el botón de micrófono en la llamada o recarga la página.</li>
+                </ol>
+            </div>
+            <p style="font-size: 0.84rem; color: #2ed573; margin-bottom: 16px;">
+                ✅ <strong>Modo Oyente activado:</strong> Puedes seguir escuchando a todos los usuarios en la llamada de voz sin problemas.
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="main-btn" id="mic-perm-close-btn" style="width: auto; padding: 8px 18px; font-size: 0.85rem;">Continuar en llamada</button>
+            </div>
+        </div>
+    </div>
+
     <div class="mini-toast" id="mini-toast"></div>
 
     <!-- PERFIL DE USUARIO MODAL -->
@@ -2080,16 +2493,42 @@
     <div class="chat-container">
         <!-- BARRA IZQUIERDA: SERVIDORES, CANALES Y AMIGOS -->
         <aside class="friends-sidebar" id="friends-sidebar">
+            <div class="sidebar-section-title">Canales</div>
             <button class="server-channel-btn active" id="btn-global-chat">
-                <span>🌐</span>
-                <span>Chat Online</span>
+                <span style="font-size: 1.1rem;">💬</span>
+                <span>Chat General</span>
             </button>
 
-            <div class="friends-header">
+            <div class="vc-sidebar-channel-container">
+                <button class="server-channel-btn vc-channel-btn" id="btn-voice-channel">
+                    <span style="font-size: 1.1rem;">🔊</span>
+                    <span style="flex: 1; text-align: left;">General (Voz)</span>
+                    <span class="vc-user-count-badge" id="vc-badge" style="display: none;">0</span>
+                </button>
+                <ul class="vc-sidebar-users" id="vc-sidebar-users"></ul>
+            </div>
+
+            <div class="friends-header" style="margin-top: 6px;">
                 <h3>Amigos (<span id="friends-count">0</span>)</h3>
             </div>
             <ul id="friends-list"></ul>
             <div class="friends-empty" id="friends-empty">Aún no tienes amigos. Haz clic en la foto de alguien y pulsa "Agregar amigo".</div>
+
+            <!-- Panel inferior de estado de voz cuando estás en VC -->
+            <div class="vc-connected-bar" id="vc-connected-bar" style="display: none;">
+                <div class="vc-connected-info">
+                    <div class="vc-pulse-dot"></div>
+                    <div class="vc-connected-texts">
+                        <span class="vc-connected-title">Voz Conectada</span>
+                        <span class="vc-connected-sub">General / WebRTC</span>
+                    </div>
+                </div>
+                <div class="vc-connected-actions">
+                    <button type="button" class="vc-icon-btn" id="vc-mute-toggle" title="Silenciar / Activar micrófono">🎙️</button>
+                    <button type="button" class="vc-icon-btn" id="vc-deafen-toggle" title="Ensordecer (mutear sonido)">🎧</button>
+                    <button type="button" class="vc-icon-btn vc-danger" id="vc-disconnect-btn" title="Desconectarse del canal de voz">📞</button>
+                </div>
+            </div>
         </aside>
 
         <!-- ÁREA CENTRAL DE MENSAJES -->
@@ -2221,6 +2660,48 @@
                     <div class="gif-footer" id="gif-footer"></div>
                 </div>
             </form>
+
+            <!-- VISTA DEL CANAL DE VOZ (VC STAGE) -->
+            <div id="voice-channel-view" style="display: none; flex: 1; flex-direction: column; min-height: 0;">
+                <div class="vc-stage-header">
+                    <div class="vc-stage-title">
+                        <h2>🔊 Canal de Voz: General</h2>
+                        <p class="vc-stage-desc">Transmisión de voz en vivo peer-to-peer con WebRTC y servidores STUN para WAN e Internet</p>
+                    </div>
+                    <div class="vc-stage-status-wrap">
+                        <button type="button" class="main-btn vc-join-btn" id="vc-stage-join-btn">🎙️ Conectarse a Voz</button>
+                    </div>
+                </div>
+
+                <div class="vc-grid-container" id="vc-grid-container">
+                    <div class="vc-empty-notice" id="vc-empty-notice">
+                        <div style="font-size: 3rem; margin-bottom: 10px;">🎧</div>
+                        <h3>El canal de voz está vacío</h3>
+                        <p>Haz clic en "Conectarse a Voz" para empezar a hablar con tus amigos en tiempo real.</p>
+                    </div>
+                    <div class="vc-grid" id="vc-grid" style="display: none;"></div>
+                </div>
+
+                <div class="vc-bottom-toolbar" id="vc-bottom-toolbar">
+                    <div class="vc-toolbar-stats" id="vc-toolbar-stats">
+                        <span id="vc-stat-peers">0 conectados</span> • <span id="vc-stat-quality">Protocolo: WebRTC (STUN Global)</span>
+                    </div>
+                    <div class="vc-toolbar-buttons">
+                        <button type="button" class="vc-stage-btn" id="vc-stage-mute-btn" title="Silenciar / Activar micrófono">
+                            <span id="vc-stage-mute-icon">🎙️</span>
+                            <span id="vc-stage-mute-text">Silenciar</span>
+                        </button>
+                        <button type="button" class="vc-stage-btn" id="vc-stage-deafen-btn" title="Ensordecer / Activar sonido">
+                            <span id="vc-stage-deafen-icon">🎧</span>
+                            <span id="vc-stage-deafen-text">Ensordecer</span>
+                        </button>
+                        <button type="button" class="vc-stage-btn vc-stage-btn-danger" id="vc-stage-leave-btn" title="Desconectarse del canal de voz">
+                            <span>🛑</span>
+                            <span>Desconectar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- BARRA DERECHA: CONECTADOS (EN GLOBAL) O PERFIL DEL AMIGO (EN DM) -->
@@ -2364,6 +2845,7 @@
 
         const typingIndicator = document.getElementById('typing-indicator');
         const typingText = document.getElementById('typing-text');
+        const recordingIndicator = document.getElementById('recording-indicator');
 
         const form = document.getElementById('form');
         const input = document.getElementById('input');
@@ -2390,6 +2872,27 @@
 
         const currentChannelTitle = document.getElementById('current-channel-title');
         const btnGlobalChat = document.getElementById('btn-global-chat');
+        const btnVoiceChannel = document.getElementById('btn-voice-channel');
+        const vcBadge = document.getElementById('vc-badge');
+        const vcSidebarUsers = document.getElementById('vc-sidebar-users');
+        const vcConnectedBar = document.getElementById('vc-connected-bar');
+        const vcMuteToggle = document.getElementById('vc-mute-toggle');
+        const vcDeafenToggle = document.getElementById('vc-deafen-toggle');
+        const vcDisconnectBtn = document.getElementById('vc-disconnect-btn');
+
+        const voiceChannelView = document.getElementById('voice-channel-view');
+        const vcStageJoinBtn = document.getElementById('vc-stage-join-btn');
+        const vcEmptyNotice = document.getElementById('vc-empty-notice');
+        const vcGrid = document.getElementById('vc-grid');
+        const vcStatPeers = document.getElementById('vc-stat-peers');
+        const vcStageMuteBtn = document.getElementById('vc-stage-mute-btn');
+        const vcStageMuteIcon = document.getElementById('vc-stage-mute-icon');
+        const vcStageMuteText = document.getElementById('vc-stage-mute-text');
+        const vcStageDeafenBtn = document.getElementById('vc-stage-deafen-btn');
+        const vcStageDeafenIcon = document.getElementById('vc-stage-deafen-icon');
+        const vcStageDeafenText = document.getElementById('vc-stage-deafen-text');
+        const vcStageLeaveBtn = document.getElementById('vc-stage-leave-btn');
+
         const usersPanelView = document.getElementById('users-panel-view');
         const dmProfilePanelView = document.getElementById('dm-profile-panel-view');
 
@@ -2620,7 +3123,11 @@
                 }
                 triggerHapticFeedback(800, 0.1);
             } catch (err) {
-                alert('No se pudo acceder al micrófono.');
+                console.warn('Voice recording mic error:', err);
+                showToast('⚠️ No se pudo grabar audio: ' + (err.name === 'NotAllowedError' ? 'Permiso de micrófono denegado' : 'Micrófono no disponible'));
+                if (typeof showMicPermissionModal === 'function') {
+                    showMicPermissionModal('Para grabar notas de voz, permite el acceso al micrófono en tu navegador.');
+                }
             }
         }
 
@@ -3051,7 +3558,7 @@
             });
         });
 
-        // ====== CAMBIAR ENTRE CHAT GLOBAL Y CHAT PRIVADO ======
+        // ====== CAMBIAR ENTRE CANALES (GLOBAL, VOZ, PRIVADOS) ======
         function switchToGlobalChat() {
             // #13 Limpiar estado de respuesta y grabación al cambiar de canal
             if (isRecording) stopRecording(true);
@@ -3059,9 +3566,15 @@
             if (replyPreviewContainer) replyPreviewContainer.style.display = 'none';
 
             currentDmUser = null;
-            currentChannelTitle.textContent = 'Chat Online';
+            currentChannelTitle.textContent = 'Chat General';
             btnGlobalChat.classList.add('active');
+            btnVoiceChannel.classList.remove('active');
             document.querySelectorAll('.friend-item').forEach(el => el.classList.remove('active'));
+
+            // Restaurar visibilidad del chat de texto
+            voiceChannelView.style.display = 'none';
+            messages.style.display = 'flex';
+            form.style.display = 'flex';
 
             // Cambiar panel derecho
             usersPanelView.style.display = 'block';
@@ -3075,6 +3588,33 @@
 
         btnGlobalChat.addEventListener('click', switchToGlobalChat);
 
+        function switchToVoiceChannel() {
+            if (isRecording) stopRecording(true);
+            replyingTo = null;
+            if (replyPreviewContainer) replyPreviewContainer.style.display = 'none';
+
+            currentDmUser = null;
+            btnGlobalChat.classList.remove('active');
+            document.querySelectorAll('.friend-item').forEach(el => el.classList.remove('active'));
+            btnVoiceChannel.classList.add('active');
+
+            currentChannelTitle.textContent = '🔊 General (Voz)';
+
+            // Ocultar chat de texto y mostrar vista de canal de voz
+            messages.style.display = 'none';
+            form.style.display = 'none';
+            if (typingIndicator) typingIndicator.style.display = 'none';
+            if (recordingIndicator) recordingIndicator.style.display = 'none';
+            voiceChannelView.style.display = 'flex';
+
+            usersPanelView.style.display = 'block';
+            dmProfilePanelView.style.display = 'none';
+
+            renderVoiceStage();
+        }
+
+        btnVoiceChannel.addEventListener('click', switchToVoiceChannel);
+
         function switchToDmChat(friendData, uid) {
             if (!uid) return;
             // #13 Limpiar estado de respuesta y grabación al cambiar de canal
@@ -3085,9 +3625,15 @@
             currentDmUser = Object.assign({}, friendData, { uid: uid });
 
             btnGlobalChat.classList.remove('active');
+            btnVoiceChannel.classList.remove('active');
             document.querySelectorAll('.friend-item').forEach(el => {
                 el.classList.toggle('active', el.dataset.uid === uid);
             });
+
+            // Restaurar visibilidad del chat de texto para el DM
+            voiceChannelView.style.display = 'none';
+            messages.style.display = 'flex';
+            form.style.display = 'flex';
 
             currentChannelTitle.textContent = `💬 ${escapeHtml(currentDmUser.nickname)}`;
 
@@ -4176,7 +4722,7 @@
                     adminTrigger.style.color = '#28a745';
                     showToast('Modo administrador verificado');
                 } else {
-                    alert(res && res.message ? res.message : 'Contraseña incorrecta');
+                    showToast(res && res.message ? res.message : 'Contraseña incorrecta');
                 }
             });
         });
@@ -4197,6 +4743,674 @@
             kickedModal.style.display = 'flex';
         });
         reconnectBtn.addEventListener('click', () => window.location.reload());
+
+        // ============================================================
+        // MOTOR DE CANAL DE VOZ (WebRTC MESH + STUN SERVERS PARA WAN/INTERNET)
+        // ============================================================
+        const RTC_CONFIG = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
+                { urls: 'stun:stun.cloudflare.com:3478' }
+            ],
+            iceCandidatePoolSize: 10
+        };
+
+        let inVoiceChannel = false;
+        let isMicMuted = false;
+        let isDeafened = false;
+        let isListenerMode = false;
+        let localVoiceStream = null;
+        const peerConnections = new Map(); // socketId -> RTCPeerConnection
+        const remoteAudioElements = new Map(); // socketId -> HTMLAudioElement
+        const remoteAudioAnalysers = new Map(); // socketId -> { ctx, analyser }
+        const pendingIceCandidates = new Map(); // socketId -> [RTCIceCandidateInit]
+        let localVoiceAudioCtx = null;
+        let localVoiceAnalyser = null;
+        let localVoiceCheckInterval = null;
+        let localIsSpeaking = false;
+        let currentVoiceUsers = []; // Lista recibida del servidor de usuarios en la sala de voz
+
+        const micPermissionModal = document.getElementById('mic-permission-modal');
+        const micErrorDesc = document.getElementById('mic-error-desc');
+        const micPermCloseBtn = document.getElementById('mic-perm-close-btn');
+
+        function showMicPermissionModal(msg) {
+            if (!micPermissionModal) return;
+            if (micErrorDesc && msg) micErrorDesc.textContent = msg;
+            micPermissionModal.style.display = 'flex';
+        }
+
+        if (micPermCloseBtn) {
+            micPermCloseBtn.addEventListener('click', () => {
+                if (micPermissionModal) micPermissionModal.style.display = 'none';
+            });
+        }
+
+        function createSilentAudioStream() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = ctx.createOscillator();
+                const dst = ctx.createMediaStreamDestination();
+                oscillator.connect(dst);
+                oscillator.start();
+                const track = dst.stream.getAudioTracks()[0];
+                if (track) track.enabled = false;
+                return { stream: dst.stream, ctx };
+            } catch (e) {
+                return { stream: null, ctx: null };
+            }
+        }
+
+        function updateVcToolbarUi() {
+            // Barra inferior en la barra lateral
+            if (vcConnectedBar) {
+                vcConnectedBar.style.display = inVoiceChannel ? 'block' : 'none';
+            }
+
+            // Estado de botones en sidebar
+            if (vcMuteToggle) {
+                vcMuteToggle.classList.toggle('active-muted', isMicMuted);
+                vcMuteToggle.textContent = isMicMuted ? '🔇' : '🎙️';
+                vcMuteToggle.title = isListenerMode ? 'Activar micrófono (Permisos)' : (isMicMuted ? 'Reactivar micrófono' : 'Silenciar micrófono');
+            }
+            if (vcDeafenToggle) {
+                vcDeafenToggle.classList.toggle('active-muted', isDeafened);
+                vcDeafenToggle.textContent = isDeafened ? '🔇' : '🎧';
+            }
+
+            // Estado de botones en Voice Stage
+            if (vcStageJoinBtn) {
+                if (inVoiceChannel) {
+                    if (isListenerMode) {
+                        vcStageJoinBtn.textContent = '🟢 En llamada (Modo Oyente)';
+                        vcStageJoinBtn.style.background = 'rgba(255, 193, 7, 0.2)';
+                        vcStageJoinBtn.style.color = '#ffc107';
+                        vcStageJoinBtn.style.borderColor = '#ffc107';
+                    } else {
+                        vcStageJoinBtn.textContent = '🟢 En llamada de voz';
+                        vcStageJoinBtn.style.background = 'rgba(40, 167, 69, 0.2)';
+                        vcStageJoinBtn.style.color = '#28a745';
+                        vcStageJoinBtn.style.borderColor = '#28a745';
+                    }
+                } else {
+                    vcStageJoinBtn.textContent = '🎙️ Conectarse a Voz';
+                    vcStageJoinBtn.style.background = '';
+                    vcStageJoinBtn.style.color = '';
+                    vcStageJoinBtn.style.borderColor = '';
+                }
+            }
+
+            if (vcStageMuteBtn) {
+                vcStageMuteBtn.classList.toggle('active-muted', isMicMuted);
+                if (vcStageMuteIcon) vcStageMuteIcon.textContent = isMicMuted ? '🔇' : '🎙️';
+                if (vcStageMuteText) vcStageMuteText.textContent = isListenerMode ? 'Activar micro' : (isMicMuted ? 'Reactivar micro' : 'Silenciar');
+            }
+            if (vcStageDeafenBtn) {
+                vcStageDeafenBtn.classList.toggle('active-muted', isDeafened);
+                if (vcStageDeafenIcon) vcStageDeafenIcon.textContent = isDeafened ? '🔇' : '🎧';
+                if (vcStageDeafenText) vcStageDeafenText.textContent = isDeafened ? 'Desensordecer' : 'Ensordecer';
+            }
+
+            const count = currentVoiceUsers.length;
+            if (vcBadge) {
+                vcBadge.textContent = count;
+                vcBadge.style.display = count > 0 ? 'inline-block' : 'none';
+            }
+            if (vcStatPeers) {
+                vcStatPeers.textContent = `${count} usuario${count === 1 ? '' : 's'} en voz` + (isListenerMode ? ' (Modo Oyente activo)' : '');
+            }
+        }
+
+        function renderVcSidebarUsers() {
+            if (!vcSidebarUsers) return;
+            vcSidebarUsers.innerHTML = '';
+            currentVoiceUsers.forEach(u => {
+                const li = document.createElement('li');
+                li.className = 'vc-sidebar-user-item';
+                li.id = 'vc-sidebar-user-' + u.socketId;
+                if (u.isSpeaking) li.classList.add('speaking');
+
+                const initial = (u.nickname || 'U').charAt(0).toUpperCase();
+                const avatarHtml = u.avatar
+                    ? `<img src="${u.avatar}" class="vc-sidebar-user-avatar" alt="">`
+                    : `<div class="vc-sidebar-user-avatar" style="background:${safeColor(u.color)}; color:#000;">${initial}</div>`;
+
+                let icons = '';
+                if (u.isMuted) icons += '<span>🔇</span>';
+                if (u.isDeafened) icons += '<span>🎧</span>';
+
+                li.innerHTML = `
+                    ${avatarHtml}
+                    <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:120px;">${escapeHtml(u.nickname)}</span>
+                    <div class="vc-sidebar-user-icons">${icons}</div>
+                `;
+                vcSidebarUsers.appendChild(li);
+            });
+            updateVcToolbarUi();
+        }
+
+        function renderVoiceStage() {
+            if (!vcGrid || !vcEmptyNotice) return;
+            if (currentVoiceUsers.length === 0) {
+                vcEmptyNotice.style.display = 'block';
+                vcGrid.style.display = 'none';
+                vcGrid.innerHTML = '';
+                return;
+            }
+
+            vcEmptyNotice.style.display = 'none';
+            vcGrid.style.display = 'grid';
+            vcGrid.innerHTML = '';
+
+            currentVoiceUsers.forEach(u => {
+                const card = document.createElement('div');
+                card.className = 'vc-user-card';
+                card.id = 'vc-card-' + u.socketId;
+                if (u.isSpeaking) card.classList.add('speaking');
+
+                const isMe = u.socketId === socket.id;
+                const initial = (u.nickname || 'U').charAt(0).toUpperCase();
+                const avatarHtml = u.avatar
+                    ? `<img src="${u.avatar}" class="vc-card-avatar" alt="">`
+                    : `<div class="vc-card-avatar" style="background:${safeColor(u.color)}; color:#000;">${initial}</div>`;
+
+                let badgeIcon = '🎙️';
+                if (u.isDeafened) badgeIcon = '🔇';
+                else if (u.isMuted) badgeIcon = '🔇';
+
+                card.innerHTML = `
+                    <div class="vc-card-avatar-wrap">
+                        ${avatarHtml}
+                        <div class="vc-card-status-badge" title="${u.isMuted ? 'Silenciado' : (u.isDeafened ? 'Ensordecido' : 'Micrófono activo')}">${badgeIcon}</div>
+                    </div>
+                    <div class="vc-card-name">${escapeHtml(u.nickname)} ${isMe ? '(Tú)' : ''}</div>
+                    <div class="vc-card-tag">
+                        <span class="vc-live-indicator"></span>
+                        <span>${isMe ? 'Tu micrófono' : 'Conectado'}</span>
+                    </div>
+                `;
+                vcGrid.appendChild(card);
+            });
+        }
+
+        function updateUserSpeakingUi(socketId, isSpeaking) {
+            const sidebarUser = document.getElementById('vc-sidebar-user-' + socketId);
+            if (sidebarUser) sidebarUser.classList.toggle('speaking', !!isSpeaking);
+
+            const card = document.getElementById('vc-card-' + socketId);
+            if (card) card.classList.toggle('speaking', !!isSpeaking);
+        }
+
+        function setupLocalVad(stream) {
+            if (localVoiceCheckInterval) {
+                clearInterval(localVoiceCheckInterval);
+                localVoiceCheckInterval = null;
+            }
+            if (localVoiceAudioCtx) {
+                try { localVoiceAudioCtx.close(); } catch (e) {}
+                localVoiceAudioCtx = null;
+            }
+
+            try {
+                localVoiceAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const src = localVoiceAudioCtx.createMediaStreamSource(stream);
+                localVoiceAnalyser = localVoiceAudioCtx.createAnalyser();
+                localVoiceAnalyser.fftSize = 512;
+                src.connect(localVoiceAnalyser);
+
+                const dataArr = new Uint8Array(localVoiceAnalyser.fftSize);
+                let silenceTicks = 0;
+                localVoiceCheckInterval = setInterval(() => {
+                    if (!inVoiceChannel || !localVoiceAnalyser) return;
+                    localVoiceAnalyser.getByteTimeDomainData(dataArr);
+                    let sumSq = 0;
+                    for (let i = 0; i < dataArr.length; i++) {
+                        const v = (dataArr[i] - 128) / 128;
+                        sumSq += v * v;
+                    }
+                    const rms = Math.sqrt(sumSq / dataArr.length);
+                    const speaking = rms > 0.025 && !isMicMuted && !isListenerMode;
+                    if (speaking) {
+                        silenceTicks = 0;
+                        if (!localIsSpeaking) {
+                            localIsSpeaking = true;
+                            socket.emit('vc:speaking', { isSpeaking: true });
+                            updateUserSpeakingUi(socket.id, true);
+                        }
+                    } else {
+                        silenceTicks++;
+                        if (silenceTicks > 3 && localIsSpeaking) {
+                            localIsSpeaking = false;
+                            socket.emit('vc:speaking', { isSpeaking: false });
+                            updateUserSpeakingUi(socket.id, false);
+                        }
+                    }
+                }, 100);
+            } catch (vadErr) {
+                console.warn('VAD initialization warning:', vadErr);
+            }
+        }
+
+        async function joinVoiceChannel() {
+            if (inVoiceChannel) return;
+            if (!myNickname) {
+                showToast('Primero escribe tu apodo para ingresar');
+                return;
+            }
+
+            let hasMicAccess = false;
+            if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+                try {
+                    localVoiceStream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        },
+                        video: false
+                    });
+                    hasMicAccess = true;
+                    isListenerMode = false;
+                    isMicMuted = false;
+                } catch (err) {
+                    console.warn('Acceso a micrófono no otorgado:', err);
+                    hasMicAccess = false;
+                    isListenerMode = true;
+                    isMicMuted = true;
+                    const silentObj = createSilentAudioStream();
+                    localVoiceStream = silentObj.stream;
+                    showMicPermissionModal(err.name === 'NotAllowedError' ? 'El navegador bloqueó el permiso de micrófono.' : (err.message || 'Micrófono no disponible'));
+                }
+            } else {
+                isListenerMode = true;
+                isMicMuted = true;
+                const silentObj = createSilentAudioStream();
+                localVoiceStream = silentObj.stream;
+                showMicPermissionModal('Tu navegador no tiene soporte de micrófono en este contexto.');
+            }
+
+            if (hasMicAccess && localVoiceStream) {
+                setupLocalVad(localVoiceStream);
+            }
+
+            inVoiceChannel = true;
+            updateVcToolbarUi();
+
+            // Notificar al servidor que nos unimos a la sala de voz
+            socket.emit('vc:join', {
+                uid: myUid,
+                nickname: myNickname,
+                avatar: myAvatarBase64,
+                color: (currentUsersData && currentUsersData[socket.id] && currentUsersData[socket.id].color) || '#007bff',
+                isMuted: isMicMuted,
+                isDeafened: isDeafened
+            });
+
+            if (isListenerMode) {
+                showToast('🎧 Te has conectado en Modo Oyente (puedes escuchar la sala)');
+            } else {
+                showToast('🎙️ Conectado al canal de voz: General');
+            }
+        }
+
+        function createPeerConnection(peerSocketId) {
+            if (peerConnections.has(peerSocketId)) {
+                return peerConnections.get(peerSocketId);
+            }
+
+            const pc = new RTCPeerConnection(RTC_CONFIG);
+            peerConnections.set(peerSocketId, pc);
+
+            // Añadir audio local al peer si tenemos stream
+            if (localVoiceStream) {
+                localVoiceStream.getAudioTracks().forEach(track => {
+                    pc.addTrack(track, localVoiceStream);
+                });
+            }
+
+            pc.onicecandidate = (event) => {
+                if (event.candidate) {
+                    socket.emit('vc:signal', {
+                        target: peerSocketId,
+                        signal: { type: 'candidate', candidate: event.candidate }
+                    });
+                }
+            };
+
+            pc.ontrack = (event) => {
+                const stream = event.streams[0] || new MediaStream([event.track]);
+                attachRemoteAudio(peerSocketId, stream);
+            };
+
+            pc.onconnectionstatechange = () => {
+                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                    closePeerConnection(peerSocketId);
+                }
+            };
+
+            return pc;
+        }
+
+        function attachRemoteAudio(peerSocketId, stream) {
+            let audioEl = remoteAudioElements.get(peerSocketId);
+            if (!audioEl) {
+                audioEl = document.createElement('audio');
+                audioEl.autoplay = true;
+                audioEl.playsInline = true;
+                audioEl.style.display = 'none';
+                document.body.appendChild(audioEl);
+                remoteAudioElements.set(peerSocketId, audioEl);
+            }
+            audioEl.srcObject = stream;
+            audioEl.muted = isDeafened;
+            audioEl.play().catch(e => console.warn('Auto-play error on remote audio:', e));
+
+            // Detector de voz para el usuario remoto
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const src = ctx.createMediaStreamSource(stream);
+                const analyser = ctx.createAnalyser();
+                analyser.fftSize = 512;
+                src.connect(analyser);
+                remoteAudioAnalysers.set(peerSocketId, { ctx, analyser });
+
+                const data = new Uint8Array(analyser.fftSize);
+                let silenceCount = 0;
+                let remoteSpeaking = false;
+                const interval = setInterval(() => {
+                    if (!inVoiceChannel || !remoteAudioAnalysers.has(peerSocketId)) {
+                        clearInterval(interval);
+                        return;
+                    }
+                    analyser.getByteTimeDomainData(data);
+                    let sumSq = 0;
+                    for (let i = 0; i < data.length; i++) {
+                        const val = (data[i] - 128) / 128;
+                        sumSq += val * val;
+                    }
+                    const rms = Math.sqrt(sumSq / data.length);
+                    if (rms > 0.025) {
+                        silenceCount = 0;
+                        if (!remoteSpeaking) {
+                            remoteSpeaking = true;
+                            updateUserSpeakingUi(peerSocketId, true);
+                        }
+                    } else {
+                        silenceCount++;
+                        if (silenceCount > 3 && remoteSpeaking) {
+                            remoteSpeaking = false;
+                            updateUserSpeakingUi(peerSocketId, false);
+                        }
+                    }
+                }, 100);
+            } catch (err) {}
+        }
+
+        function closePeerConnection(peerSocketId) {
+            const pc = peerConnections.get(peerSocketId);
+            if (pc) {
+                try { pc.close(); } catch (e) {}
+                peerConnections.delete(peerSocketId);
+            }
+
+            const audio = remoteAudioElements.get(peerSocketId);
+            if (audio) {
+                try {
+                    audio.pause();
+                    audio.srcObject = null;
+                    audio.remove();
+                } catch (e) {}
+                remoteAudioElements.delete(peerSocketId);
+            }
+
+            const an = remoteAudioAnalysers.get(peerSocketId);
+            if (an) {
+                try { an.ctx.close(); } catch (e) {}
+                remoteAudioAnalysers.delete(peerSocketId);
+            }
+            pendingIceCandidates.delete(peerSocketId);
+        }
+
+        function leaveVoiceChannel() {
+            if (!inVoiceChannel) return;
+            inVoiceChannel = false;
+            socket.emit('vc:leave');
+
+            if (localVoiceCheckInterval) {
+                clearInterval(localVoiceCheckInterval);
+                localVoiceCheckInterval = null;
+            }
+
+            if (localVoiceStream) {
+                localVoiceStream.getTracks().forEach(t => t.stop());
+                localVoiceStream = null;
+            }
+
+            if (localVoiceAudioCtx) {
+                try { localVoiceAudioCtx.close(); } catch (e) {}
+                localVoiceAudioCtx = null;
+            }
+
+            peerConnections.forEach((pc, id) => {
+                closePeerConnection(id);
+            });
+            peerConnections.clear();
+
+            isMicMuted = false;
+            isDeafened = false;
+            isListenerMode = false;
+            localIsSpeaking = false;
+
+            updateVcToolbarUi();
+            renderVoiceStage();
+            showToast('Te has desconectado del canal de voz');
+        }
+
+        async function toggleMicMute() {
+            if (!inVoiceChannel) return;
+
+            // Si el usuario estaba en Modo Oyente porque el permiso fue denegado, intentar pedir acceso al micro
+            if (isListenerMode) {
+                if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+                    try {
+                        const newStream = await navigator.mediaDevices.getUserMedia({
+                            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+                            video: false
+                        });
+                        const newTrack = newStream.getAudioTracks()[0];
+                        if (newTrack) {
+                            localVoiceStream = newStream;
+                            isListenerMode = false;
+                            isMicMuted = false;
+                            newTrack.enabled = true;
+
+                            // Reemplazar la pista de audio en todas las conexiones WebRTC
+                            peerConnections.forEach((pc) => {
+                                const sender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+                                if (sender) {
+                                    sender.replaceTrack(newTrack);
+                                } else {
+                                    pc.addTrack(newTrack, localVoiceStream);
+                                }
+                            });
+
+                            setupLocalVad(localVoiceStream);
+                            socket.emit('vc:state-update', { isMuted: false, isDeafened: isDeafened });
+                            updateVcToolbarUi();
+                            const me = currentVoiceUsers.find(u => u.socketId === socket.id);
+                            if (me) me.isMuted = false;
+                            renderVcSidebarUsers();
+                            renderVoiceStage();
+                            showToast('🎙️ ¡Micrófono activado correctamente!');
+                            return;
+                        }
+                    } catch (retryErr) {
+                        console.warn('Reintento de acceso a micrófono:', retryErr);
+                        showMicPermissionModal(retryErr.name === 'NotAllowedError' ? 'El navegador sigue bloqueando el micrófono. Revisa los permisos del navegador.' : (retryErr.message || 'Error al conectar micrófono'));
+                        return;
+                    }
+                }
+            }
+
+            isMicMuted = !isMicMuted;
+            if (localVoiceStream) {
+                localVoiceStream.getAudioTracks().forEach(t => {
+                    t.enabled = !isMicMuted;
+                });
+            }
+            if (isMicMuted && localIsSpeaking) {
+                localIsSpeaking = false;
+                socket.emit('vc:speaking', { isSpeaking: false });
+                updateUserSpeakingUi(socket.id, false);
+            }
+            socket.emit('vc:state-update', { isMuted: isMicMuted, isDeafened: isDeafened });
+            updateVcToolbarUi();
+            const me = currentVoiceUsers.find(u => u.socketId === socket.id);
+            if (me) me.isMuted = isMicMuted;
+            renderVcSidebarUsers();
+            renderVoiceStage();
+            showToast(isMicMuted ? 'Micrófono silenciado' : 'Micrófono activado');
+        }
+
+        function toggleDeafen() {
+            if (!inVoiceChannel) return;
+            isDeafened = !isDeafened;
+            remoteAudioElements.forEach(audio => {
+                audio.muted = isDeafened;
+            });
+
+            // Si se ensordece, también silenciamos el micro
+            if (isDeafened && !isMicMuted) {
+                isMicMuted = true;
+                if (localVoiceStream) {
+                    localVoiceStream.getAudioTracks().forEach(t => {
+                        t.enabled = false;
+                    });
+                }
+            }
+            socket.emit('vc:state-update', { isMuted: isMicMuted, isDeafened: isDeafened });
+            updateVcToolbarUi();
+            const me = currentVoiceUsers.find(u => u.socketId === socket.id);
+            if (me) {
+                me.isMuted = isMicMuted;
+                me.isDeafened = isDeafened;
+            }
+            renderVcSidebarUsers();
+            renderVoiceStage();
+            showToast(isDeafened ? 'Audio ensordecido' : 'Audio reactivado');
+        }
+
+        // WebRTC Signaling Events
+        socket.on('vc:room-summary', (usersList) => {
+            currentVoiceUsers = usersList || [];
+            renderVcSidebarUsers();
+            renderVoiceStage();
+        });
+
+        socket.on('vc:existing-users', async (existingList) => {
+            for (const peer of existingList) {
+                if (peer.socketId === socket.id) continue;
+                const pc = createPeerConnection(peer.socketId);
+                try {
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    socket.emit('vc:signal', {
+                        target: peer.socketId,
+                        signal: { type: 'offer', sdp: pc.localDescription }
+                    });
+                } catch (err) {
+                    console.error('Error creating offer for peer:', peer.socketId, err);
+                }
+            }
+        });
+
+        socket.on('vc:user-joined', (user) => {
+            showToast(`🎙️ ${escapeHtml(user.nickname)} entró a la sala de voz`);
+        });
+
+        socket.on('vc:user-left', ({ socketId }) => {
+            closePeerConnection(socketId);
+        });
+
+        socket.on('vc:user-updated', ({ socketId, isMuted, isDeafened }) => {
+            const u = currentVoiceUsers.find(x => x.socketId === socketId);
+            if (u) {
+                u.isMuted = isMuted;
+                u.isDeafened = isDeafened;
+                renderVcSidebarUsers();
+                renderVoiceStage();
+            }
+        });
+
+        socket.on('vc:user-speaking', ({ socketId, isSpeaking }) => {
+            updateUserSpeakingUi(socketId, isSpeaking);
+        });
+
+        socket.on('vc:signal', async ({ sender, signal }) => {
+            if (!sender || !signal) return;
+            let pc = peerConnections.get(sender);
+            if (!pc) {
+                pc = createPeerConnection(sender);
+            }
+
+            try {
+                if (signal.type === 'offer') {
+                    await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+                    // Aplicar candidatos pendientes
+                    const queue = pendingIceCandidates.get(sender) || [];
+                    for (const cand of queue) {
+                        try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+                    }
+                    pendingIceCandidates.delete(sender);
+
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                    socket.emit('vc:signal', {
+                        target: sender,
+                        signal: { type: 'answer', sdp: pc.localDescription }
+                    });
+                } else if (signal.type === 'answer') {
+                    await pc.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+                    const queue = pendingIceCandidates.get(sender) || [];
+                    for (const cand of queue) {
+                        try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+                    }
+                    pendingIceCandidates.delete(sender);
+                } else if (signal.type === 'candidate' && signal.candidate) {
+                    if (pc.remoteDescription && pc.remoteDescription.type) {
+                        try {
+                            await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
+                        } catch (e) {
+                            console.warn('Error adding ICE candidate:', e);
+                        }
+                    } else {
+                        if (!pendingIceCandidates.has(sender)) pendingIceCandidates.set(sender, []);
+                        pendingIceCandidates.get(sender).push(signal.candidate);
+                    }
+                }
+            } catch (err) {
+                console.error('Signaling processing error:', err);
+            }
+        });
+
+        // Botones de llamada e interfaz
+        if (vcStageJoinBtn) {
+            vcStageJoinBtn.addEventListener('click', () => {
+                if (!inVoiceChannel) joinVoiceChannel();
+                else leaveVoiceChannel();
+            });
+        }
+        if (vcMuteToggle) vcMuteToggle.addEventListener('click', toggleMicMute);
+        if (vcDeafenToggle) vcDeafenToggle.addEventListener('click', toggleDeafen);
+        if (vcDisconnectBtn) vcDisconnectBtn.addEventListener('click', leaveVoiceChannel);
+
+        if (vcStageMuteBtn) vcStageMuteBtn.addEventListener('click', toggleMicMute);
+        if (vcStageDeafenBtn) vcStageDeafenBtn.addEventListener('click', toggleDeafen);
+        if (vcStageLeaveBtn) vcStageLeaveBtn.addEventListener('click', leaveVoiceChannel);
 
         loadSettings();
     </script>
