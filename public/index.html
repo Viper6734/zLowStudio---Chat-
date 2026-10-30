@@ -4774,6 +4774,86 @@
         let localIsSpeaking = false;
         let currentVoiceUsers = []; // Lista recibida del servidor de usuarios en la sala de voz
 
+        // --- Recuperación de conexiones de voz ---
+        const ICE_RETRY_MS = 6000;   // si una conexión no está 'connected' tras este tiempo, se reintenta
+        const ICE_GIVEUP_MS = 20000; // si sigue sin conectar tras este tiempo, se avisa al usuario
+        const peerRecoveryTimers = new Map(); // socketId -> { retry, giveUp }
+        const peerAudioFailed = new Set();    // socketId con los que no se logró conectar el audio
+
+        // Oferta WebRTC hacia un usuario (la usan la entrada a la sala y el reintento de ICE)
+        async function sendOffer(peerSocketId, pc, options) {
+            try {
+                const offer = await pc.createOffer(options);
+                await pc.setLocalDescription(offer);
+                socket.emit('vc:signal', {
+                    target: peerSocketId,
+                    signal: { type: 'offer', sdp: pc.localDescription }
+                });
+            } catch (err) {
+                console.error('Error creating offer for peer:', peerSocketId, err);
+            }
+        }
+
+        // Aviso al servidor de que entramos a la sala de voz (al unirse y al reconectar el socket)
+        function emitVoiceJoin() {
+            socket.emit('vc:join', {
+                uid: myUid,
+                nickname: myNickname,
+                avatar: myAvatarBase64,
+                color: (currentUsersData && currentUsersData[socket.id] && currentUsersData[socket.id].color) || '#007bff',
+                isMuted: isMicMuted,
+                isDeafened: isDeafened
+            });
+        }
+
+        function clearPeerRecovery(peerSocketId) {
+            const t = peerRecoveryTimers.get(peerSocketId);
+            if (t) {
+                clearTimeout(t.retry);
+                clearTimeout(t.giveUp);
+                peerRecoveryTimers.delete(peerSocketId);
+            }
+        }
+
+        // Reinicia la búsqueda de ruta (ICE). Solo ofrece el usuario con el id menor:
+        // si ofrecieran los dos a la vez, sus ofertas se pisarían.
+        function restartIce(peerSocketId, pc) {
+            if (socket.id > peerSocketId) return;
+            if (pc.signalingState !== 'stable') return;
+            sendOffer(peerSocketId, pc, { iceRestart: true });
+        }
+
+        // Si la conexión con un usuario no llega (o no se mantiene) en 'connected': reintenta y, si no hay forma, avisa.
+        function schedulePeerRecovery(peerSocketId, pc) {
+            if (peerRecoveryTimers.has(peerSocketId)) return;
+            const stillBroken = () => peerConnections.get(peerSocketId) === pc && pc.connectionState !== 'connected';
+            const retry = setTimeout(() => {
+                if (stillBroken()) restartIce(peerSocketId, pc);
+            }, ICE_RETRY_MS);
+            const giveUp = setTimeout(() => {
+                peerRecoveryTimers.delete(peerSocketId);
+                if (!stillBroken()) return;
+                const u = currentVoiceUsers.find(x => x.socketId === peerSocketId);
+                if (!u) { closePeerConnection(peerSocketId); return; }
+                peerAudioFailed.add(peerSocketId);
+                showToast(`⚠️ No se pudo conectar el audio con ${u.nickname}`);
+                renderVoiceStage();
+            }, ICE_GIVEUP_MS);
+            peerRecoveryTimers.set(peerSocketId, { retry, giveUp });
+        }
+
+        // Estado real de la conexión de audio con un usuario, para mostrarlo en su tarjeta
+        function peerStatus(socketId) {
+            // Quien mira la sala sin estar en la llamada no tiene conexiones propias: se muestra presente
+            if (!inVoiceChannel) return { text: 'Conectado', color: '#2ed573' };
+            if (peerAudioFailed.has(socketId)) return { text: 'Sin audio (error de conexión)', color: '#ff4757' };
+            const pc = peerConnections.get(socketId);
+            const st = pc && pc.connectionState;
+            if (st === 'connected') return { text: 'Conectado', color: '#2ed573' };
+            if (st === 'disconnected' || st === 'failed') return { text: 'Reconectando…', color: '#ffa502' };
+            return { text: 'Conectando…', color: '#ffa502' };
+        }
+
         const micPermissionModal = document.getElementById('mic-permission-modal');
         const micErrorDesc = document.getElementById('mic-error-desc');
         const micPermCloseBtn = document.getElementById('mic-perm-close-btn');
@@ -4929,8 +5009,8 @@
                     </div>
                     <div class="vc-card-name">${escapeHtml(u.nickname)} ${isMe ? '(Tú)' : ''}</div>
                     <div class="vc-card-tag">
-                        <span class="vc-live-indicator"></span>
-                        <span>${isMe ? 'Tu micrófono' : 'Conectado'}</span>
+                        <span class="vc-live-indicator" style="background:${isMe ? '#2ed573' : peerStatus(u.socketId).color}"></span>
+                        <span>${isMe ? 'Tu micrófono' : peerStatus(u.socketId).text}</span>
                     </div>
                 `;
                 vcGrid.appendChild(card);
@@ -5041,14 +5121,7 @@
             updateVcToolbarUi();
 
             // Notificar al servidor que nos unimos a la sala de voz
-            socket.emit('vc:join', {
-                uid: myUid,
-                nickname: myNickname,
-                avatar: myAvatarBase64,
-                color: (currentUsersData && currentUsersData[socket.id] && currentUsersData[socket.id].color) || '#007bff',
-                isMuted: isMicMuted,
-                isDeafened: isDeafened
-            });
+            emitVoiceJoin();
 
             if (isListenerMode) {
                 showToast('🎧 Te has conectado en Modo Oyente (puedes escuchar la sala)');
@@ -5064,6 +5137,7 @@
 
             const pc = new RTCPeerConnection(RTC_CONFIG);
             peerConnections.set(peerSocketId, pc);
+            schedulePeerRecovery(peerSocketId, pc);
 
             // Añadir audio local al peer si tenemos stream
             if (localVoiceStream) {
@@ -5087,9 +5161,16 @@
             };
 
             pc.onconnectionstatechange = () => {
-                if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                const state = pc.connectionState;
+                if (state === 'connected') {
+                    clearPeerRecovery(peerSocketId);
+                    peerAudioFailed.delete(peerSocketId);
+                } else if (state === 'disconnected' || state === 'failed') {
+                    schedulePeerRecovery(peerSocketId, pc); // da tiempo a recuperarse y reintenta antes de rendirse
+                } else if (state === 'closed') {
                     closePeerConnection(peerSocketId);
                 }
+                renderVoiceStage(); // refleja el estado en la tarjeta
             };
 
             return pc;
@@ -5173,6 +5254,8 @@
                 remoteAudioAnalysers.delete(peerSocketId);
             }
             pendingIceCandidates.delete(peerSocketId);
+            clearPeerRecovery(peerSocketId);
+            peerAudioFailed.delete(peerSocketId);
         }
 
         function leaveVoiceChannel() {
@@ -5313,18 +5396,11 @@
 
         socket.on('vc:existing-users', async (existingList) => {
             for (const peer of existingList) {
-                if (peer.socketId === socket.id) continue;
+                // Se omite uno mismo y cualquier entrada con mi mismo uid: es una entrada "fantasma" de mi
+                // conexión anterior que el servidor aún no ha limpiado (nadie va a contestar a esa oferta)
+                if (peer.socketId === socket.id || peer.uid === myUid) continue;
                 const pc = createPeerConnection(peer.socketId);
-                try {
-                    const offer = await pc.createOffer();
-                    await pc.setLocalDescription(offer);
-                    socket.emit('vc:signal', {
-                        target: peer.socketId,
-                        signal: { type: 'offer', sdp: pc.localDescription }
-                    });
-                } catch (err) {
-                    console.error('Error creating offer for peer:', peer.socketId, err);
-                }
+                await sendOffer(peer.socketId, pc);
             }
         });
 
@@ -5395,6 +5471,16 @@
             } catch (err) {
                 console.error('Signaling processing error:', err);
             }
+        });
+
+        // Si el socket se cae y reconecta, el servidor ya nos sacó de la sala de voz (evento 'disconnect')
+        // y los demás cerraron su conexión con nosotros. Hay que limpiar lo viejo y volver a entrar.
+        socket.on('connect', () => {
+            if (!inVoiceChannel) return;
+            Array.from(peerConnections.keys()).forEach(closePeerConnection);
+            localIsSpeaking = false;
+            emitVoiceJoin();
+            showToast('🔄 Conexión restablecida: volviendo al canal de voz');
         });
 
         // Botones de llamada e interfaz
